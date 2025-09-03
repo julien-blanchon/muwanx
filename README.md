@@ -1,6 +1,6 @@
 # muwanx
 
-[![GitHub Pages](https://github.com/ttktjmt/muwanx/actions/workflows/pages/pages-build-deployment/badge.svg)](https://github.com/ttktjmt/muwanx/actions/workflows/pages/pages-build-deployment)
+[![GitHub Pages CI](https://github.com/ttktjmt/muwanx/actions/workflows/deploy.yml/badge.svg)](https://github.com/ttktjmt/muwanx/actions/workflows/deploy.yml)
 [![GitHub License](https://img.shields.io/github/license/ttktjmt/muwanx)](LICENSE)
 
 **Muwanx** is a lightweight, browser-based reinforcement learning demo web application built with [mujoco_wasm](https://github.com/zalo/mujoco_wasm/) and [ONNX Runtime Web](https://www.onnxruntime.ai/docs/build/web.html). This allows you to run MuJoCo simulations in real-time with trained policies controlling entirely client-side. Ideal for sharing interactive demos as a static site (e.g., hosting on GitHub Pages), prototyping policies, or building customizable RL playgrounds directly in the browser.
