@@ -177,20 +177,6 @@
                 </v-tabs-window-item>
 
                 <v-tabs-window-item value="3">
-                    <v-card-text>
-                        <div class="text-caption text-grey mb-2">
-                            Slide to set command velocity
-                        </div>
-                        <v-slider v-model="command_vel_x" :min="-0.5" :max="1.5" :step="0.1" label="velocity"
-                            hide-details @update:modelValue="updateCommandVelXCallback()">
-                            <template v-slot:append>
-                                <div class="text-caption">{{ command_vel_x }}</div>
-                            </template>
-                        </v-slider>
-                    </v-card-text>
-
-                    <v-divider></v-divider>
-
                     <!-- Force Controls Group -->
                     <v-card-text class="pb-2">
                         <div class="text-subtitle-2 mb-2">Force Controls</div>

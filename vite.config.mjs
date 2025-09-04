@@ -1,5 +1,4 @@
 // Plugins
-import Components from 'unplugin-vue-components/vite'
 import Vue from '@vitejs/plugin-vue'
 import Vuetify, { transformAssetUrls } from 'vite-plugin-vuetify'
 import Fonts from 'unplugin-fonts/vite'
@@ -21,7 +20,6 @@ export default defineConfig({
         configFile: './src/styles/settings.scss',
       },
     }),
-    Components(),
     Fonts({
       fontsource: {
         families: [
