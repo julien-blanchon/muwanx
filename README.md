@@ -8,7 +8,6 @@
 [![GitHub Pages CI](https://github.com/ttktjmt/muwanx/actions/workflows/deploy.yml/badge.svg)](https://github.com/ttktjmt/muwanx/actions/workflows/deploy.yml)
 [![GitHub License](https://img.shields.io/github/license/ttktjmt/muwanx)](LICENSE)
 
----
 
 ## What is Muwanx?
 
