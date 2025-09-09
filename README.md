@@ -1,4 +1,5 @@
 <div align="center">
+    <img src="https://raw.githubusercontent.com/ttktjmt/muwanx/refs/heads/main/public/muwanx.svg" alt="Muwanx Logo" width="100"/>
     <h1>Muwanx</h1>
     <em>Lightweight browser-based RL demo with MuJoCo and ONNX</em>
 </div>
@@ -17,7 +18,7 @@
 ## Features
 
 - Real-time control of MuJoCo simulations with trained policies
-- Apply force to the simulation for testing robustness of the policies
+- Apply force to the simulation for testing the robustness of the policies
 - Change the state of the goal that policies reference
 - Fully client-side execution using MuJoCo compiled in WebAssembly and ONNX Runtime Web
 - Easy to share and host as a static site (e.g., GitHub Pages)
