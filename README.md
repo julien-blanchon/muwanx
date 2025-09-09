@@ -1,5 +1,4 @@
 <div align="center">
-    <img src="https://raw.githubusercontent.com/ttktjmt/muwanx/refs/heads/main/public/muwanx.svg" alt="Muwanx Logo" width="100"/>
     <h1>Muwanx</h1>
     <em>Lightweight browser-based RL demo with MuJoCo and ONNX</em>
 </div>
