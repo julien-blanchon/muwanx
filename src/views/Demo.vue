@@ -7,7 +7,6 @@
             <v-tabs v-model="task" bg-color="primary" @update:modelValue="updateTaskCallback()">
                 <v-tab value="1">Go2</v-tab>
                 <v-tab value="2">Go1</v-tab>
-                <v-tab value="3">Bimanual</v-tab>
             </v-tabs>
 
             <v-tabs-window v-model="task">
@@ -175,16 +174,6 @@
                         </div>
                     </v-card-text>
                 </v-tabs-window-item>
-
-                <v-tabs-window-item value="3">
-                    <!-- Force Controls Group -->
-                    <v-card-text class="pb-2">
-                        <div class="text-subtitle-2 mb-2">Force Controls</div>
-                        <div class="text-caption text-grey mb-2">
-                            Drag on the robot to apply force
-                        </div>
-                    </v-card-text>
-                </v-tabs-window-item>
             </v-tabs-window>
 
             <!-- add reset button -->
@@ -210,9 +199,9 @@
         </v-card>
     </v-dialog>
 
-    <!-- Caption (bottom-left) -->
+    <!-- Notice -->
     <div style="position: fixed; bottom: 12px; left: 12px; z-index: 1000;">
-        <div style="background: transparent; color: rgba(255,255,255,0.95); padding: 10px 16px; border-radius: 4px; font-size: 14px; font-weight: 500; backdrop-filter: none;">
+        <div style="background: transparent; color: rgba(255,255,255,0.95); padding: 10px 16px; border-radius: 4px; font-size: 14px; font-weight: 500; backdrop-filter: none; text-shadow: 0 1px 2px rgba(0,0,0,0.4);">
             Powered by <a href="https://github.com/ttktjmt/muwanx" target="_blank" style="color: #8DDFFB; text-decoration: none;">Muwanx</a>
         </div>
     </div>
@@ -228,13 +217,11 @@ import load_mujoco from '@/mujoco_wasm/dist/mujoco_wasm.js';
 const tasks = {
     "1": ["unitree_go2/scene.xml", "./examples/checkpoints/go2/asset_meta.json"],
     "2": ["unitree_go1/go1.xml", "./examples/checkpoints/go1/asset_meta.json"],
-    "3": ["bimanual/myoarm_bionic_bimanual.mjb", "./examples/checkpoints/bimanual/asset_meta.json"],
 }
 
 const default_policy = {
     "1": "facet",
     "2": "him",
-    "3": "baseline",
 }
 
 const policies = {
@@ -243,7 +230,6 @@ const policies = {
     "vanilla": "./examples/checkpoints/vanilla.json",
     "him": "./examples/checkpoints/go1/go1_him.json",
     "decap": "./examples/checkpoints/go1/go1_decap.json",
-    "bimanual": "./examples/checkpoints/bimanual/baseline.json",
 }
 
 export default {

@@ -6,7 +6,7 @@
         <v-card>
             <v-tabs v-model="task" bg-color="primary" @update:modelValue="updateTaskCallback()">
                 <v-tab value="1">Go2</v-tab>
-                <v-tab value="2">Go1</v-tab>
+                <v-tab value="2">MyoHand</v-tab>
             </v-tabs>
 
             <v-tabs-window v-model="task">
@@ -199,9 +199,9 @@
         </v-card>
     </v-dialog>
 
-    <!-- Caption (bottom-left) -->
+    <!-- Notice -->
     <div style="position: fixed; bottom: 12px; left: 12px; z-index: 1000;">
-        <div style="background: transparent; color: rgba(255,255,255,0.95); padding: 10px 16px; border-radius: 4px; font-size: 14px; font-weight: 500; backdrop-filter: none;">
+        <div style="background: transparent; color: rgba(255,255,255,0.95); padding: 10px 16px; border-radius: 4px; font-size: 14px; font-weight: 500; backdrop-filter: none; text-shadow: 0 1px 2px rgba(0,0,0,0.4);">
             Powered by <a href="https://github.com/ttktjmt/muwanx" target="_blank" style="color: #8DDFFB; text-decoration: none;">Muwanx</a>
         </div>
     </div>

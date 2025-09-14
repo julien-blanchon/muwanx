@@ -5,9 +5,18 @@
 
 <br>
 
-[![GitHub Pages CI](https://github.com/ttktjmt/muwanx/actions/workflows/deploy.yml/badge.svg)](https://github.com/ttktjmt/muwanx/actions/workflows/deploy.yml)
-[![GitHub License](https://img.shields.io/github/license/ttktjmt/muwanx)](LICENSE)
+<p align="center">
+    <a href="https://github.com/ttktjmt/muwanx/actions/workflows/deploy.yml"><img
+    src="https://github.com/ttktjmt/muwanx/actions/workflows/deploy.yml/badge.svg"
+    alt="GitHub Pages CI"
+    /></a>
+    <a href="https://github.com/ttktjmt/muwanx/blob/main/LICENSE"><img
+    src="https://img.shields.io/github/license/ttktjmt/muwanx"
+    alt="License"
+    /></a>
+</p>
 
+</p>
 
 ## What is Muwanx?
 
@@ -23,16 +32,23 @@
 - Easy to share and host as a static site (e.g., GitHub Pages)
 - Customizable reinforcement learning playgrounds
 
-## Installation
+## Quick Start
 
+To run Muwanx locally, ensure you have [Node.js](https://nodejs.org/) installed, then execute the following commands in your terminal.
+
+Clone the repository on your local machine:
 ```bash
 git clone https://github.com/ttktjmt/muwanx.git
 cd muwanx
+```
 
+Install the dependencies and start the development server:
+```bash
 npm install
 npm run dev
-# access the localhost URL shown in the terminal
 ```
+
+Open your browser and navigate to the localhost URL shown in the terminal to see Muwanx in action.
 
 ## Acknowledgments
 
