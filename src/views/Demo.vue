@@ -1,29 +1,31 @@
 <template>
+
     <div id="mujoco-container">
         <!-- this is for placing the background demo -->
     </div>
+
     <div style="position: fixed; top: 20px; right: 20px; z-index: 1000; width: 400px;">
         <v-card>
             <v-tabs v-model="task" bg-color="primary" @update:modelValue="updateTaskCallback()">
-                <v-tab value="1">Go2</v-tab>
-                <v-tab value="2">Go1</v-tab>
+                <v-tab v-for="task in config.tasks" :key="task.id" :value="task.id">{{ task.name }}</v-tab>
             </v-tabs>
 
             <v-tabs-window v-model="task">
-                <v-tabs-window-item value="1">
+                <v-tabs-window-item v-for="task in config.tasks" :key="task.id" :value="task.id">
                     <v-tabs v-model="policy" bg-color="primary" @update:modelValue="updatePolicyCallback()">
-                        <v-tab value="facet">Facet</v-tab>
-                        <v-tab value="robust">Robust</v-tab>
-                        <v-tab value="vanilla">Vanilla</v-tab>
+                        <v-tab v-for="policy in task.policies" :key="policy.id" :value="policy.id">{{
+                            policy.name }}</v-tab>
                     </v-tabs>
-
+                    <!-- Policy-specific contents -->
                     <v-tabs-window v-model="policy">
-                        <v-tabs-window-item value="facet">
+                        <v-tabs-window-item v-for="policy in task.policies" :key="policy.id" :value="policy.id">
                             <!-- Command Controls Group -->
                             <v-card-text>
                                 <div class="text-subtitle-2 mb-2">Target Controls</div>
-                                <v-checkbox :disabled="compliant_mode" v-model="use_setpoint" @update:modelValue="updateUseSetpointCallback()"
-                                    density="compact" hide-details>
+                                <!-- Setpoint checkbox (only for policies with 'setpoint' in ui_controls, e.g., facet) -->
+                                <v-checkbox v-if="policy.ui_controls && policy.ui_controls.includes('setpoint')"
+                                    :disabled="compliant_mode" v-model="use_setpoint"
+                                    @update:modelValue="updateUseSetpointCallback()" density="compact" hide-details>
                                     <template v-slot:label>
                                         <p style="line-height: 1.0;">
                                             Use Setpoint
@@ -39,23 +41,31 @@
                                         </p>
                                     </template>
                                 </v-checkbox>
-                                <v-slider :disabled="use_setpoint || compliant_mode" v-model="command_vel_x" :min="-0.5"
-                                    :max="1.5" :step="0.1" label="velocity" hide-details
-                                    @update:modelValue="updateCommandVelXCallback()">
+                                <!-- Velocity slider (available for all policies) -->
+                                <div class="text-caption text-grey mb-2">
+                                    Slide to set command velocity
+                                </div>
+                                <v-slider
+                                    :disabled="use_setpoint && policy.ui_controls && policy.ui_controls.includes('setpoint') && compliant_mode"
+                                    v-model="command_vel_x" :min="-0.5" :max="1.5" :step="0.1" label="velocity"
+                                    hide-details @update:modelValue="updateCommandVelXCallback()">
                                     <template v-slot:append>
                                         <div class="text-caption">{{ command_vel_x }}</div>
                                     </template>
                                 </v-slider>
                             </v-card-text>
-                            <v-divider></v-divider>
-                            <!-- Stiffness Controls Group -->
-                            <v-card-text>
+
+                            <!-- Stiffness Controls Group (only for policies with 'stiffness' in ui_controls, e.g., facet) -->
+                            <v-divider
+                                v-if="policy.ui_controls && policy.ui_controls.includes('stiffness')"></v-divider>
+                            <v-card-text v-if="policy.ui_controls && policy.ui_controls.includes('stiffness')">
                                 <div class="text-subtitle-2 mb-2">Stiffness Controls</div>
                                 <v-checkbox v-model="compliant_mode" @update:modelValue="updateCompliantModeCallback()"
                                     density="compact" hide-details>
                                     <template v-slot:label>
                                         <p style="line-height: 1.0;">
-                                            Compliant Mode <br />
+                                            Compliant Mode
+                                            <br />
                                             <span class="text-caption text-grey" v-if="compliant_mode"
                                                 style="line-height: 1.0;">
                                                 Stiffness is set to 0
@@ -67,7 +77,6 @@
                                         </p>
                                     </template>
                                 </v-checkbox>
-
                                 <v-slider :disabled="compliant_mode" v-model="facet_kp" :min="0" :max="24" :step="1"
                                     label="stiffness" hide-details @update:modelValue="updateFacetKpCallback()">
                                     <template v-slot:append>
@@ -75,94 +84,11 @@
                                     </template>
                                 </v-slider>
                             </v-card-text>
-
-                        </v-tabs-window-item>
-
-                        <v-tabs-window-item value="robust">
-                            <!-- add instructions -->
-                            <v-card-text>
-                                <div class="text-caption text-grey mb-2">
-                                    Slide to set command velocity
-                                </div>
-                                <v-slider v-model="command_vel_x" :min="-0.5" :max="1.5" :step="0.1" label="velocity"
-                                    hide-details @update:modelValue="updateCommandVelXCallback()">
-                                    <template v-slot:append>
-                                        <div class="text-caption">{{ command_vel_x }}</div>
-                                    </template>
-                                </v-slider>
-                            </v-card-text>
-                        </v-tabs-window-item>
-
-                        <v-tabs-window-item value="vanilla">
-                            <!-- add instructions -->
-                            <v-card-text>
-                                <div class="text-caption text-grey mb-2">
-                                    Slide to set command velocity
-                                </div>
-                                <v-slider v-model="command_vel_x" :min="-0.5" :max="1.5" :step="0.1" label="velocity"
-                                    hide-details @update:modelValue="updateCommandVelXCallback()">
-                                    <template v-slot:append>
-                                        <div class="text-caption">{{ command_vel_x }}</div>
-                                    </template>
-                                </v-slider>
-                            </v-card-text>
                         </v-tabs-window-item>
                     </v-tabs-window>
 
+                    <!-- Force Controls Group (shared across all policies) -->
                     <v-divider></v-divider>
-
-                    <!-- Force Controls Group -->
-                    <v-card-text class="pb-2">
-                        <div class="text-subtitle-2 mb-2">Force Controls</div>
-                        <div class="text-caption text-grey mb-2">
-                            Drag on the robot to apply force
-                        </div>
-                        <v-btn @click="StartImpulse" color="primary" block>Impulse</v-btn>
-                        <div class="text-caption text-grey mb-2">
-                            Click the button to apply an impulse
-                        </div>
-                    </v-card-text>
-                </v-tabs-window-item>
-
-                <v-tabs-window-item value="2">
-                    <v-tabs v-model="policy" bg-color="primary" @update:modelValue="updatePolicyCallback()">
-                        <v-tab value="him">HIMLoco</v-tab>
-                        <v-tab value="decap">Decap</v-tab>
-                    </v-tabs>
-
-                    <v-tabs-window v-model="policy">
-                        <v-tabs-window-item value="him">
-                            <v-card-text>
-                                <div class="text-caption text-grey mb-2">
-                                    Slide to set command velocity
-                                </div>
-                                <v-slider v-model="command_vel_x" :min="-0.5" :max="1.5" :step="0.1" label="velocity"
-                                    hide-details @update:modelValue="updateCommandVelXCallback()">
-                                    <template v-slot:append>
-                                        <div class="text-caption">{{ command_vel_x }}</div>
-                                    </template>
-                                </v-slider>
-                            </v-card-text>
-                        </v-tabs-window-item>
-
-                        <v-tabs-window-item value="decap">
-                            <v-card-text>
-                                <div class="text-caption text-grey mb-2">
-                                    Slide to set command velocity
-                                </div>
-                                <v-slider v-model="command_vel_x" :min="-0.5" :max="1.5" :step="0.1" label="velocity"
-                                    hide-details @update:modelValue="updateCommandVelXCallback()">
-                                    <template v-slot:append>
-                                        <div class="text-caption">{{ command_vel_x }}</div>
-                                    </template>
-                                </v-slider>
-                            </v-card-text>
-                        </v-tabs-window-item>
-                    </v-tabs-window>
-
-                    <v-divider></v-divider>
-
-                    <!-- Force Controls Group -->
                     <v-card-text class="pb-2">
                         <div class="text-subtitle-2 mb-2">Force Controls</div>
                         <div class="text-caption text-grey mb-2">
@@ -180,6 +106,7 @@
             <v-btn @click="reset" block text tile>Reset</v-btn>
         </v-card>
     </div>
+
     <v-dialog :model-value="state === 0" persistent max-width="600px" scrollable>
         <v-card title="Loading Simulation Environment">
             <v-card-text>
@@ -188,6 +115,7 @@
             </v-card-text>
         </v-card>
     </v-dialog>
+
     <v-dialog :model-value="state < 0" persistent max-width="600px" scrollable>
         <v-card title="Simulation Environment Loading Error">
             <v-card-text>
@@ -201,8 +129,10 @@
 
     <!-- Notice -->
     <div style="position: fixed; bottom: 12px; left: 12px; z-index: 1000;">
-        <div style="background: transparent; color: rgba(255,255,255,0.95); padding: 10px 16px; border-radius: 4px; font-size: 14px; font-weight: 500; backdrop-filter: none; text-shadow: 0 1px 2px rgba(0,0,0,0.4);">
-            Powered by <a href="https://github.com/ttktjmt/muwanx" target="_blank" style="color: #8DDFFB; text-decoration: none;">Muwanx</a>
+        <div
+            style="background: transparent; color: rgba(255,255,255,0.95); padding: 10px 16px; border-radius: 4px; font-size: 14px; font-weight: 500; backdrop-filter: none; text-shadow: 0 1px 2px rgba(0,0,0,0.4);">
+            Powered by <a href="https://github.com/ttktjmt/muwanx" target="_blank"
+                style="color: #8DDFFB; text-decoration: none;">Muwanx</a>
         </div>
     </div>
 
@@ -210,33 +140,15 @@
 
 
 <script>
-
 import { MuJoCoDemo } from '@/mujoco_wasm/examples/main.js';
 import load_mujoco from '@/mujoco_wasm/dist/mujoco_wasm.js';
-
-const tasks = {
-    "1": ["unitree_go2/scene.xml", "./examples/checkpoints/go2/asset_meta.json"],
-    "2": ["unitree_go1/go1.xml", "./examples/checkpoints/go1/asset_meta.json"],
-}
-
-const default_policy = {
-    "1": "facet",
-    "2": "him",
-}
-
-const policies = {
-    "facet": "./examples/checkpoints/policy-05-03_21-31.json",
-    "robust": "./examples/checkpoints/robust.json",
-    "vanilla": "./examples/checkpoints/vanilla.json",
-    "him": "./examples/checkpoints/go1/go1_him.json",
-    "decap": "./examples/checkpoints/go1/go1_decap.json",
-}
 
 export default {
     name: 'DemoPage',
     data: () => ({
-        task: '1',
-        policy: 'facet',
+        config: { tasks: [] },  // Loaded dynamically
+        task: null,
+        policy: null,
         facet_kp: 24,
         command_vel_x: 0.0,
         use_setpoint: true,
@@ -252,12 +164,15 @@ export default {
                 this.state = -2;
                 return;
             }
-
             try {
+                await this.loadConfig();  // Load config first
+                console.log(this.config);
+                if (!this.config.tasks.length) return;  // Error if empty
                 const mujoco = await load_mujoco();
                 this.demo = new MuJoCoDemo(mujoco);
                 await this.demo.init();
-                this.demo.main_loop();
+                this.updateTaskCallback();  // Load initial task/policy
+                // this.demo.main_loop();
                 this.demo.params["paused"] = false;
                 this.state = 1;
             } catch (error) {
@@ -266,28 +181,35 @@ export default {
                 console.error(error);
             }
         },
-        async updateTaskCallback() {
-            if (this.task === "3" || this.task === "4") {
-                return;
+        async loadConfig() {
+            try {
+                const response = await fetch('./config.json');
+                this.config = await response.json();
+                this.task = this.config.tasks[0]?.id;  // Default to first task
+                this.policy = this.config.tasks[0]?.default_policy;
+            } catch (error) {
+                console.error('Failed to load config:', error);
+                this.state = -1;
+                this.extra_error_message = 'Config load failed: ' + error;
             }
-            console.log(this.task);
+        },
+        async updateTaskCallback() {
+            const selectedTask = this.config.tasks.find(t => t.id === this.task);
+            if (!selectedTask) return;
+
+            this.policy = selectedTask.default_policy;  // Reset to default for new task
             this.demo.alive = false;
-            const mjcf_path = tasks[this.task][0];
-            const meta_path = tasks[this.task][1];
-            this.policy = default_policy[this.task];
-            await this.demo.reloadScene(mjcf_path, meta_path);
+            await this.demo.reloadScene(selectedTask.model_xml, selectedTask.asset_meta);
             this.updatePolicyCallback();
         },
         async updatePolicyCallback() {
-            console.log(this.policy);
+            const selectedTask = this.config.tasks.find(t => t.id === this.task);
+            const selectedPolicy = selectedTask.policies.find(p => p.id === this.policy);
+            if (!selectedPolicy) return;
+
             this.demo.alive = false;
-            await this.demo.reloadPolicy(policies[this.policy]);
-            if (this.policy === "facet") {
-                this.demo.ball.visible = true;
-                this.demo.ball.position.set(0, 0.5, 0);
-            } else {
-                this.demo.ball.visible = false;
-            }
+            await this.demo.reloadPolicy(selectedPolicy.path);
+            // Existing policy-specific logic (e.g., ball visibility for "facet") – use if (this.policy === 'facet')...
             this.demo.alive = true;
             this.demo.main_loop();
         },
@@ -342,8 +264,121 @@ export default {
     beforeUnmount() {
         // this.stopPlotUpdates();
         document.removeEventListener('keydown', this.keydown_listener);
-    }
-}
+    },
+};
+
+// export default {
+//     name: 'DemoPage',
+//     data: () => ({
+//         task: '1',
+//         policy: 'facet',
+//         facet_kp: 24,
+//         command_vel_x: 0.0,
+//         use_setpoint: true,
+//         compliant_mode: false,
+//         state: 0, // 0: loading, 1: running, -1: error by js, -2: error by wasm
+//         extra_error_message: "",
+//         keydown_listener: null,
+//     }),
+//     methods: {
+//         async init() {
+//             // check if browser supports WebAssembly
+//             if (typeof WebAssembly !== "object" || typeof WebAssembly.instantiate !== "function") {
+//                 this.state = -2;
+//                 return;
+//             }
+
+//             try {
+//                 const mujoco = await load_mujoco();
+//                 this.demo = new MuJoCoDemo(mujoco);
+//                 await this.demo.init();
+//                 this.demo.main_loop();
+//                 this.demo.params["paused"] = false;
+//                 this.state = 1;
+//             } catch (error) {
+//                 this.state = -1;
+//                 this.extra_error_message = error.toString();
+//                 console.error(error);
+//             }
+//         },
+//         async updateTaskCallback() {
+//             if (this.task === "3" || this.task === "4") {
+//                 return;
+//             }
+//             console.log(this.task);
+//             this.demo.alive = false;
+//             const mjcf_path = tasks[this.task][0];
+//             const meta_path = tasks[this.task][1];
+//             this.policy = default_policy[this.task];
+//             await this.demo.reloadScene(mjcf_path, meta_path);
+//             this.updatePolicyCallback();
+//         },
+//         async updatePolicyCallback() {
+//             console.log(this.policy);
+//             this.demo.alive = false;
+//             await this.demo.reloadPolicy(policies[this.policy]);
+//             if (this.policy === "facet") {
+//                 this.demo.ball.visible = true;
+//                 this.demo.ball.position.set(0, 0.5, 0);
+//             } else {
+//                 this.demo.ball.visible = false;
+//             }
+//             this.demo.alive = true;
+//             this.demo.main_loop();
+//         },
+//         reset() {
+//             this.demo.params["paused"] = true;
+//             this.demo.simulation.resetData();
+//             this.demo.simulation.forward();
+//             this.demo.ball.position.set(0, 0.5, 0);
+//             this.demo.params["paused"] = false;
+//         },
+//         updateFacetKpCallback() {
+//             this.facet_kp = Math.max(this.facet_kp, 12);
+//             this.facet_kp = Math.min(this.facet_kp, 24);
+//             this.demo.params["impedance_kp"] = this.facet_kp;
+//         },
+//         updateUseSetpointCallback() {
+//             console.log("use stepoint", this.use_setpoint);
+//             this.demo.params["use_setpoint"] = this.use_setpoint;
+//             if (this.use_setpoint) {
+//                 this.command_vel_x = 0.0;
+//                 this.updateCommandVelXCallback();
+//             }
+//         },
+//         updateCommandVelXCallback() {
+//             console.log("set command vel x", this.command_vel_x);
+//             this.demo.params["command_vel_x"] = this.command_vel_x;
+//         },
+//         updateCompliantModeCallback() {
+//             this.demo.params["compliant_mode"] = this.compliant_mode;
+//             if (this.compliant_mode) {
+//                 this.facet_kp = 0;
+//                 this.command_vel_x = 0.0;
+//                 this.demo.params["impedance_kp"] = this.facet_kp;
+//             } else {
+//                 this.facet_kp = 24;
+//                 this.demo.params["impedance_kp"] = this.facet_kp;
+//             }
+//         },
+//         StartImpulse() {
+//             console.log("start impulse");
+//             this.demo.params["impulse_remain_time"] = 0.1;
+//         },
+//     },
+//     mounted() {
+//         this.init();
+//         this.keydown_listener = document.addEventListener('keydown', (event) => {
+//             if (event.code === 'Backspace') {
+//                 this.reset();
+//             }
+//         });
+//     },
+//     beforeUnmount() {
+//         // this.stopPlotUpdates();
+//         document.removeEventListener('keydown', this.keydown_listener);
+//     }
+// }
 </script>
 
 <style scoped>
