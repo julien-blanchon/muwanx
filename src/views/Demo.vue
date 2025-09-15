@@ -358,7 +358,7 @@ export default {
     }
 
     .control-panel.panel-collapsed {
-        transform: translateY(calc(100% - 60px));
+           transform: translateY(calc(100% - 36px)); /* Show only the model controls */
     }
 }
 
@@ -368,7 +368,7 @@ export default {
     }
 
     .control-panel.panel-collapsed {
-        transform: translateY(calc(100% - 50px));
+           transform: translateY(calc(100% - 36px));
     }
 }
 

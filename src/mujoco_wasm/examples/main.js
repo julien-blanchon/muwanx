@@ -65,7 +65,7 @@ export class MuJoCoDemo {
     this.container.appendChild(this.renderer.domElement);
 
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-    this.controls.target.set(0, 0.7, 0);
+    this.controls.target.set(0, 0.2, 0);
     this.controls.panSpeed = 2;
     this.controls.zoomSpeed = 1;
     this.controls.enableDamping = true;
