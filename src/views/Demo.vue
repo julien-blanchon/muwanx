@@ -135,11 +135,17 @@
     <!-- Loading dialog - mobile responsive -->
     <v-dialog :model-value="state === 0" persistent :max-width="isMobile ? '90vw' : '600px'"
         :fullscreen="isMobile && isSmallScreen" scrollable>
-        <v-card :title="isMobile ? 'Loading...' : 'Loading Simulation Environment'">
+        <v-card :title="!isMobile ? 'Loading Simulation Environment' : undefined">
             <v-card-text class="dialog-content">
+                <div v-if="isMobile" class="mobile-dialog-title">Loading...</div>
                 <v-progress-linear indeterminate color="primary" class="mb-4"></v-progress-linear>
                 <div class="loading-text">
-                    Loading MuJoCo and ONNX, please wait
+                    <span v-if="isMobile">
+                        Loading MuJoCo and ONNX,<br/>Please wait...
+                    </span>
+                    <span v-else>
+                        Loading MuJoCo and ONNX, Please wait...
+                    </span>
                 </div>
             </v-card-text>
         </v-card>
@@ -494,17 +500,42 @@ export default {
 /* Dialog Styles */
 .dialog-content {
     text-align: center;
-    padding: 20px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100px;
 }
 
 @media (max-width: 768px) {
     .dialog-content {
-        padding: 16px;
+        /* Full height for mobile fullscreen dialogs */
+        min-height: 60vh;
+        height: 60vh;
+        padding: 10px;
+        justify-content: center;
+    }
+    
+    /* Center the card title on mobile */
+    .v-card-title {
+        text-align: center !important;
+        justify-content: center !important;
+    }
+    
+    /* Style for mobile dialog title positioned above progress bar */
+    .mobile-dialog-title {
+        text-align: left;
+        font-size: 1.25rem;
+        font-weight: 500;
+        margin-bottom: 16px;
+        color: rgba(0, 0, 0, 0.87);
     }
 }
 
 .loading-text,
 .error-text {
+    justify-content: center;
     font-size: 0.95rem;
     line-height: 1.5;
 }
