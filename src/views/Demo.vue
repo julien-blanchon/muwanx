@@ -182,8 +182,9 @@
 </template>
 
 <script>
-import { MuJoCoDemo } from '@/mujoco_wasm/examples/main.js';
+import { MujocoRuntime, GoCommandManager, IsaacActionManager, ConfigObservationManager, LocomotionEnvManager } from '@/mujoco_wasm/examples/main.js';
 import load_mujoco from '@/mujoco_wasm/dist/mujoco_wasm.js';
+import { markRaw } from 'vue';
 
 export default {
     name: 'DemoPage',
@@ -198,12 +199,31 @@ export default {
         state: 0,
         extra_error_message: "",
         keydown_listener: null,
+        runtime: null,
+        commandManager: null,
+        actionManager: null,
+        observationManager: null,
+        envManager: null,
         // Mobile responsive data
         isMobile: false,
         isSmallScreen: false,
         isPanelCollapsed: false,
     }),
     methods: {
+        applyCommandState() {
+            if (!this.commandManager) {
+                return;
+            }
+            this.commandManager.setUseSetpoint(this.use_setpoint);
+            this.commandManager.setCompliantMode(this.compliant_mode);
+            this.commandManager.setImpedanceKp(this.facet_kp);
+            this.commandManager.setCommandVelocityX(this.command_vel_x);
+            const params = this.runtime?.params;
+            if (params) {
+                this.facet_kp = params.impedance_kp;
+                this.command_vel_x = params.command_vel_x;
+            }
+        },
         checkMobileDevice() {
             this.isMobile = window.innerWidth <= 768;
             this.isSmallScreen = window.innerWidth <= 480;
@@ -222,10 +242,28 @@ export default {
                 console.log(this.config);
                 if (!this.config.tasks.length) return;
                 const mujoco = await load_mujoco();
-                this.demo = new MuJoCoDemo(mujoco);
-                await this.demo.init();
-                this.updateTaskCallback();
-                this.demo.params["paused"] = false;
+                this.commandManager = markRaw(new GoCommandManager());
+                this.actionManager = markRaw(new IsaacActionManager());
+                this.observationManager = markRaw(new ConfigObservationManager());
+                this.envManager = markRaw(new LocomotionEnvManager());
+
+                const initialTask = this.config.tasks[0];
+                const initialPolicy = initialTask.policies.find(p => p.id === initialTask.default_policy) ?? initialTask.policies[0];
+
+                this.runtime = markRaw(new MujocoRuntime(mujoco, {
+                    commandManager: this.commandManager,
+                    actionManager: this.actionManager,
+                    observationManagers: [this.observationManager],
+                    envManagers: [this.envManager],
+                }));
+
+                await this.runtime.init({
+                    scenePath: initialTask.model_xml,
+                    metaPath: initialTask.asset_meta,
+                    policyPath: initialPolicy?.path,
+                });
+                this.runtime.resume();
+                this.applyCommandState();
                 this.state = 1;
             } catch (error) {
                 this.state = -1;
@@ -250,58 +288,68 @@ export default {
             if (!selectedTask) return;
 
             this.policy = selectedTask.default_policy;
-            this.demo.alive = false;
-            await this.demo.reloadScene(selectedTask.model_xml, selectedTask.asset_meta);
-            this.updatePolicyCallback();
+            if (!this.runtime) return;
+            await this.runtime.loadEnvironment({
+                scenePath: selectedTask.model_xml,
+                metaPath: selectedTask.asset_meta,
+                policyPath: selectedTask.policies.find(p => p.id === this.policy)?.path,
+            });
+            this.runtime.resume();
+            this.applyCommandState();
         },
         async updatePolicyCallback() {
             const selectedTask = this.config.tasks.find(t => t.id === this.task);
             const selectedPolicy = selectedTask.policies.find(p => p.id === this.policy);
             if (!selectedPolicy) return;
 
-            this.demo.alive = false;
-            await this.demo.reloadPolicy(selectedPolicy.path);
-            this.demo.alive = true;
-            this.demo.main_loop();
+            if (!this.runtime) return;
+            await this.runtime.stop();
+            await this.runtime.loadPolicy(selectedPolicy.path);
+            this.runtime.startLoop();
+            this.runtime.resume();
+            const setpointService = this.runtime.getService?.('setpoint-control');
+            const showSetpoint = selectedPolicy.show_setpoint ?? (this.policy === 'facet');
+            setpointService?.setVisible?.(showSetpoint || this.use_setpoint);
+            if (showSetpoint) {
+                setpointService?.reset?.();
+            }
+            this.applyCommandState();
         },
-        reset() {
-            this.demo.params["paused"] = true;
-            this.demo.simulation.resetData();
-            this.demo.simulation.forward();
-            this.demo.ball.position.set(0, 0.5, 0);
-            this.demo.params["paused"] = false;
+        async reset() {
+            if (!this.runtime) return;
+            await this.runtime.reset();
+            this.applyCommandState();
         },
         updateFacetKpCallback() {
             this.facet_kp = Math.max(this.facet_kp, 12);
             this.facet_kp = Math.min(this.facet_kp, 24);
-            this.demo.params["impedance_kp"] = this.facet_kp;
+            if (!this.commandManager) return;
+            this.commandManager.setImpedanceKp(this.facet_kp);
+            this.facet_kp = this.runtime?.params?.impedance_kp ?? this.facet_kp;
         },
         updateUseSetpointCallback() {
             console.log("use setpoint", this.use_setpoint);
-            this.demo.params["use_setpoint"] = this.use_setpoint;
+            if (!this.commandManager) return;
+            this.commandManager.setUseSetpoint(this.use_setpoint);
             if (this.use_setpoint) {
                 this.command_vel_x = 0.0;
-                this.updateCommandVelXCallback();
+                this.commandManager.setCommandVelocityX(this.command_vel_x);
             }
         },
         updateCommandVelXCallback() {
             console.log("set command vel x", this.command_vel_x);
-            this.demo.params["command_vel_x"] = this.command_vel_x;
+            if (!this.commandManager) return;
+            this.commandManager.setCommandVelocityX(this.command_vel_x);
         },
         updateCompliantModeCallback() {
-            this.demo.params["compliant_mode"] = this.compliant_mode;
-            if (this.compliant_mode) {
-                this.facet_kp = 0;
-                this.command_vel_x = 0.0;
-                this.demo.params["impedance_kp"] = this.facet_kp;
-            } else {
-                this.facet_kp = 24;
-                this.demo.params["impedance_kp"] = this.facet_kp;
-            }
+            if (!this.commandManager) return;
+            this.commandManager.setCompliantMode(this.compliant_mode);
+            this.facet_kp = this.runtime?.params?.impedance_kp ?? this.facet_kp;
         },
         StartImpulse() {
             console.log("start impulse");
-            this.demo.params["impulse_remain_time"] = 0.1;
+            if (!this.commandManager) return;
+            this.commandManager.triggerImpulse();
         },
         handleResize() {
             this.checkMobileDevice();
@@ -314,15 +362,18 @@ export default {
         // Add resize listener
         window.addEventListener('resize', this.handleResize);
 
-        this.keydown_listener = document.addEventListener('keydown', (event) => {
+        this.keydown_listener = (event) => {
             if (event.code === 'Backspace') {
                 this.reset();
             }
-        });
+        };
+        document.addEventListener('keydown', this.keydown_listener);
     },
     beforeUnmount() {
         window.removeEventListener('resize', this.handleResize);
-        document.removeEventListener('keydown', this.keydown_listener);
+        if (this.keydown_listener) {
+            document.removeEventListener('keydown', this.keydown_listener);
+        }
     },
 };
 </script>

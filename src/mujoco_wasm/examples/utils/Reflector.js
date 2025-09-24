@@ -34,7 +34,7 @@ class Reflector extends Mesh {
 		const clipBias = options.clipBias || 0;
 		const shader = options.shader || Reflector.ReflectorShader;
 		const multisample = ( options.multisample !== undefined ) ? options.multisample : 4;
-        const blendTexture = options.texture || undefined;
+        const blendTexture = options.texture;
 
 		//
 
@@ -55,7 +55,8 @@ class Reflector extends Mesh {
 
 		const renderTarget = new WebGLRenderTarget( textureWidth, textureHeight, { samples: multisample, type: HalfFloatType } );
 
-		this.material = new MeshPhysicalMaterial( { map: blendTexture });
+		const materialConfig = blendTexture ? { map: blendTexture } : {};
+		this.material = new MeshPhysicalMaterial( materialConfig );
 		this.material.uniforms = { tDiffuse     : { value: renderTarget.texture },
 								   textureMatrix: { value: textureMatrix        }};
         this.material.onBeforeCompile = ( shader ) => {
