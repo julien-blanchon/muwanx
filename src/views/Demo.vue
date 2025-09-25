@@ -11,19 +11,22 @@
         </v-btn>
 
         <v-card class="control-card" :elevation="isMobile ? 0 : 2">
+            <!-- Model/Task tabs with click handler -->
             <v-tabs v-model="task" bg-color="primary" @update:modelValue="updateTaskCallback()"
                 :density="isMobile ? 'compact' : 'default'" class="tabs-container">
-                <v-tab v-for="task in config.tasks" :key="task.id" :value="task.id" :class="{ 'mobile-tab': isMobile }">
+                <v-tab v-for="task in config.tasks" :key="task.id" :value="task.id" 
+                    :class="{ 'mobile-tab': isMobile }" @click="handleTaskTabClick(task.id)">
                     {{ task.name }}
                 </v-tab>
             </v-tabs>
 
             <v-tabs-window v-model="task">
                 <v-tabs-window-item v-for="task in config.tasks" :key="task.id" :value="task.id">
+                    <!-- Policy tabs with click handler -->
                     <v-tabs v-model="policy" bg-color="primary" @update:modelValue="updatePolicyCallback()"
                         :density="isMobile ? 'compact' : 'default'">
                         <v-tab v-for="policy in task.policies" :key="policy.id" :value="policy.id"
-                            :class="{ 'mobile-tab': isMobile }">
+                            :class="{ 'mobile-tab': isMobile }" @click="handlePolicyTabClick(policy.id)">
                             {{ policy.name }}
                         </v-tab>
                     </v-tabs>
@@ -315,6 +318,40 @@ export default {
             }
             this.applyCommandState();
         },
+        async reloadDefaultPolicyAndResetSimulation() {
+            if (!this.runtime) return;
+            
+            const selectedTask = this.config.tasks.find(t => t.id === this.task);
+            if (!selectedTask) return;
+
+            // Set to default policy
+            this.policy = selectedTask.default_policy;
+            const defaultPolicy = selectedTask.policies.find(p => p.id === selectedTask.default_policy);
+            if (!defaultPolicy) return;
+
+            try {
+                await this.runtime.stop();
+                await this.runtime.loadPolicy(defaultPolicy.path);
+                this.runtime.startLoop();
+                this.runtime.resume();
+                
+                // Reset simulation after loading default policy
+                await this.runtime.reset();
+                this.applyCommandState();
+            } catch (error) {
+                console.error('Failed to reload default policy and reset simulation:', error);
+            }
+        },
+        async resetSimulation() {
+            if (!this.runtime) return;
+            
+            try {
+                await this.runtime.reset();
+                this.applyCommandState();
+            } catch (error) {
+                console.error('Failed to reset simulation:', error);
+            }
+        },
         async reset() {
             if (!this.runtime) return;
             await this.runtime.reset();
@@ -353,6 +390,18 @@ export default {
         },
         handleResize() {
             this.checkMobileDevice();
+        },
+        handleTaskTabClick(clickedTaskId) {
+            // If clicking the same task tab that's already active
+            if (this.task === clickedTaskId) {
+                this.reloadDefaultPolicyAndResetSimulation();
+            }
+        },
+        handlePolicyTabClick(clickedPolicyId) {
+            // If clicking the same policy tab that's already active
+            if (this.policy === clickedPolicyId) {
+                this.resetSimulation();
+            }
         },
     },
     mounted() {
