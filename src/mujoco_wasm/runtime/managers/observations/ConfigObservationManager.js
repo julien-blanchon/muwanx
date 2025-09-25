@@ -21,6 +21,10 @@ export class ConfigObservationManager extends BaseManager {
         }
     }
 
+    async onPolicyCleared() {
+        this.observationGroups = {};
+    }
+
     createObservationInstance({ obsConfig, model, simulation }) {
         const ObsClass = Observations[obsConfig.name];
         if (!ObsClass) {

@@ -22,93 +22,101 @@
 
             <v-tabs-window v-model="task">
                 <v-tabs-window-item v-for="task in config.tasks" :key="task.id" :value="task.id">
-                    <!-- Policy tabs with click handler -->
-                    <v-tabs v-model="policy" bg-color="primary" @update:modelValue="updatePolicyCallback()"
-                        :density="isMobile ? 'compact' : 'default'">
-                        <v-tab v-for="policy in task.policies" :key="policy.id" :value="policy.id"
-                            :class="{ 'mobile-tab': isMobile }" @click="handlePolicyTabClick(policy.id)">
-                            {{ policy.name }}
-                        </v-tab>
-                    </v-tabs>
+                    <template v-if="task.policies?.length">
+                        <!-- Policy tabs with click handler -->
+                        <v-tabs v-model="policy" bg-color="primary" @update:modelValue="updatePolicyCallback()"
+                            :density="isMobile ? 'compact' : 'default'">
+                            <v-tab v-for="policy in task.policies" :key="policy.id" :value="policy.id"
+                                :class="{ 'mobile-tab': isMobile }" @click="handlePolicyTabClick(policy.id)">
+                                {{ policy.name }}
+                            </v-tab>
+                        </v-tabs>
 
-                    <!-- Policy-specific contents -->
-                    <v-tabs-window v-model="policy">
-                        <v-tabs-window-item v-for="policy in task.policies" :key="policy.id" :value="policy.id">
-                            <!-- Command Controls Group -->
-                            <v-card-text :class="{ 'mobile-padding': isMobile }">
-                                <div class="control-section-title">Target Controls</div>
+                        <!-- Policy-specific contents -->
+                        <v-tabs-window v-model="policy">
+                            <v-tabs-window-item v-for="policy in task.policies" :key="policy.id" :value="policy.id">
+                                <!-- Command Controls Group -->
+                                <v-card-text :class="{ 'mobile-padding': isMobile }">
+                                    <div class="control-section-title">Target Controls</div>
 
-                                <!-- Setpoint checkbox -->
-                                <v-checkbox v-if="policy.ui_controls && policy.ui_controls.includes('setpoint')"
-                                    :disabled="compliant_mode" v-model="use_setpoint"
-                                    @update:modelValue="updateUseSetpointCallback()"
-                                    :density="isMobile ? 'compact' : 'default'" hide-details class="mobile-checkbox">
-                                    <template v-slot:label>
-                                        <div class="checkbox-label">
-                                            <span class="label-text">Use Setpoint</span>
-                                            <span class="label-description">
-                                                <span v-if="use_setpoint">
-                                                    Drag the red sphere to command target positions
+                                    <!-- Setpoint checkbox -->
+                                    <v-checkbox v-if="policy.ui_controls && policy.ui_controls.includes('setpoint')"
+                                        :disabled="compliant_mode" v-model="use_setpoint"
+                                        @update:modelValue="updateUseSetpointCallback()"
+                                        :density="isMobile ? 'compact' : 'default'" hide-details class="mobile-checkbox">
+                                        <template v-slot:label>
+                                            <div class="checkbox-label">
+                                                <span class="label-text">Use Setpoint</span>
+                                                <span class="label-description">
+                                                    <span v-if="use_setpoint">
+                                                        Drag the red sphere to command target positions
+                                                    </span>
+                                                    <span v-else>
+                                                        Slide to command target velocities
+                                                    </span>
                                                 </span>
-                                                <span v-else>
-                                                    Slide to command target velocities
-                                                </span>
-                                            </span>
-                                        </div>
-                                    </template>
-                                </v-checkbox>
-
-                                <!-- Velocity slider -->
-                                <div class="slider-section">
-                                    <div class="slider-label">Slide to set command velocity</div>
-                                    <v-slider
-                                        :disabled="use_setpoint && policy.ui_controls && policy.ui_controls.includes('setpoint') && compliant_mode"
-                                        v-model="command_vel_x" :min="-0.5" :max="1.5" :step="0.1"
-                                        :thumb-size="isMobile ? 20 : 16" :track-size="isMobile ? 6 : 4" hide-details
-                                        @update:modelValue="updateCommandVelXCallback()" class="mobile-slider">
-                                        <template v-slot:append>
-                                            <div class="slider-value">{{ command_vel_x }}</div>
+                                            </div>
                                         </template>
-                                    </v-slider>
-                                </div>
-                            </v-card-text>
+                                    </v-checkbox>
 
-                            <!-- Stiffness Controls Group -->
-                            <v-divider
-                                v-if="policy.ui_controls && policy.ui_controls.includes('stiffness')"></v-divider>
-                            <v-card-text v-if="policy.ui_controls && policy.ui_controls.includes('stiffness')"
-                                :class="{ 'mobile-padding': isMobile }">
-                                <div class="control-section-title">Stiffness Controls</div>
+                                    <!-- Velocity slider -->
+                                    <div class="slider-section">
+                                        <div class="slider-label">Slide to set command velocity</div>
+                                        <v-slider
+                                            :disabled="use_setpoint && policy.ui_controls && policy.ui_controls.includes('setpoint') && compliant_mode"
+                                            v-model="command_vel_x" :min="-0.5" :max="1.5" :step="0.1"
+                                            :thumb-size="isMobile ? 20 : 16" :track-size="isMobile ? 6 : 4" hide-details
+                                            @update:modelValue="updateCommandVelXCallback()" class="mobile-slider">
+                                            <template v-slot:append>
+                                                <div class="slider-value">{{ command_vel_x }}</div>
+                                            </template>
+                                        </v-slider>
+                                    </div>
+                                </v-card-text>
 
-                                <v-checkbox v-model="compliant_mode" @update:modelValue="updateCompliantModeCallback()"
-                                    :density="isMobile ? 'compact' : 'default'" hide-details class="mobile-checkbox">
-                                    <template v-slot:label>
-                                        <div class="checkbox-label">
-                                            <span class="label-text">Compliant Mode</span>
-                                            <span class="label-description">
-                                                <span v-if="compliant_mode">
-                                                    Stiffness is set to 0
+                                <!-- Stiffness Controls Group -->
+                                <v-divider
+                                    v-if="policy.ui_controls && policy.ui_controls.includes('stiffness')"></v-divider>
+                                <v-card-text v-if="policy.ui_controls && policy.ui_controls.includes('stiffness')"
+                                    :class="{ 'mobile-padding': isMobile }">
+                                    <div class="control-section-title">Stiffness Controls</div>
+
+                                    <v-checkbox v-model="compliant_mode" @update:modelValue="updateCompliantModeCallback()"
+                                        :density="isMobile ? 'compact' : 'default'" hide-details class="mobile-checkbox">
+                                        <template v-slot:label>
+                                            <div class="checkbox-label">
+                                                <span class="label-text">Compliant Mode</span>
+                                                <span class="label-description">
+                                                    <span v-if="compliant_mode">
+                                                        Stiffness is set to 0
+                                                    </span>
+                                                    <span v-else>
+                                                        Slide to set stiffness
+                                                    </span>
                                                 </span>
-                                                <span v-else>
-                                                    Slide to set stiffness
-                                                </span>
-                                            </span>
-                                        </div>
-                                    </template>
-                                </v-checkbox>
-
-                                <div class="slider-section">
-                                    <v-slider :disabled="compliant_mode" v-model="facet_kp" :min="0" :max="24" :step="1"
-                                        :thumb-size="isMobile ? 20 : 16" :track-size="isMobile ? 6 : 4" hide-details
-                                        @update:modelValue="updateFacetKpCallback()" class="mobile-slider">
-                                        <template v-slot:append>
-                                            <div class="slider-value">{{ facet_kp }}</div>
+                                            </div>
                                         </template>
-                                    </v-slider>
-                                </div>
-                            </v-card-text>
-                        </v-tabs-window-item>
-                    </v-tabs-window>
+                                    </v-checkbox>
+
+                                    <div class="slider-section">
+                                        <v-slider :disabled="compliant_mode" v-model="facet_kp" :min="0" :max="24" :step="1"
+                                            :thumb-size="isMobile ? 20 : 16" :track-size="isMobile ? 6 : 4" hide-details
+                                            @update:modelValue="updateFacetKpCallback()" class="mobile-slider">
+                                            <template v-slot:append>
+                                                <div class="slider-value">{{ facet_kp }}</div>
+                                            </template>
+                                        </v-slider>
+                                    </div>
+                                </v-card-text>
+                            </v-tabs-window-item>
+                        </v-tabs-window>
+                    </template>
+                    <v-card-text v-else :class="{ 'mobile-padding': isMobile }" class="no-policy-message">
+                        <div class="control-section-title">Policy Controls</div>
+                        <div class="force-description">
+                            No policy is configured for this task. The simulation runs with default joint targets only.
+                        </div>
+                    </v-card-text>
 
                     <!-- Force Controls Group -->
                     <v-divider></v-divider>
@@ -213,6 +221,13 @@ export default {
         isPanelCollapsed: false,
     }),
     methods: {
+        resolveDefaultPolicy(task) {
+            if (!task) return null;
+            if (task.default_policy !== null && task.default_policy !== undefined) {
+                return task.default_policy;
+            }
+            return task.policies?.[0]?.id ?? null;
+        },
         applyCommandState() {
             if (!this.commandManager) {
                 return;
@@ -278,8 +293,9 @@ export default {
             try {
                 const response = await fetch('./config.json');
                 this.config = await response.json();
-                this.task = this.config.tasks[0]?.id;
-                this.policy = this.config.tasks[0]?.default_policy;
+                const firstTask = this.config.tasks[0];
+                this.task = firstTask?.id ?? null;
+                this.policy = this.resolveDefaultPolicy(firstTask);
             } catch (error) {
                 console.error('Failed to load config:', error);
                 this.state = -1;
@@ -290,12 +306,13 @@ export default {
             const selectedTask = this.config.tasks.find(t => t.id === this.task);
             if (!selectedTask) return;
 
-            this.policy = selectedTask.default_policy;
+            this.policy = this.resolveDefaultPolicy(selectedTask);
             if (!this.runtime) return;
+            const selectedPolicy = selectedTask.policies.find(p => p.id === this.policy);
             await this.runtime.loadEnvironment({
                 scenePath: selectedTask.model_xml,
                 metaPath: selectedTask.asset_meta,
-                policyPath: selectedTask.policies.find(p => p.id === this.policy)?.path,
+                policyPath: selectedPolicy?.path,
             });
             this.runtime.resume();
             this.applyCommandState();
@@ -324,18 +341,23 @@ export default {
             const selectedTask = this.config.tasks.find(t => t.id === this.task);
             if (!selectedTask) return;
 
-            // Set to default policy
-            this.policy = selectedTask.default_policy;
-            const defaultPolicy = selectedTask.policies.find(p => p.id === selectedTask.default_policy);
-            if (!defaultPolicy) return;
+            this.policy = this.resolveDefaultPolicy(selectedTask);
+            const defaultPolicy = selectedTask.policies.find(p => p.id === this.policy);
 
             try {
-                await this.runtime.stop();
-                await this.runtime.loadPolicy(defaultPolicy.path);
-                this.runtime.startLoop();
+                if (defaultPolicy) {
+                    await this.runtime.stop();
+                    await this.runtime.loadPolicy(defaultPolicy.path);
+                    this.runtime.startLoop();
+                } else {
+                    await this.runtime.loadEnvironment({
+                        scenePath: selectedTask.model_xml,
+                        metaPath: selectedTask.asset_meta,
+                    });
+                }
                 this.runtime.resume();
-                
-                // Reset simulation after loading default policy
+
+                // Reset simulation after loading default policy or environment
                 await this.runtime.reset();
                 this.applyCommandState();
             } catch (error) {
@@ -555,6 +577,11 @@ export default {
 /* Slider Styles */
 .slider-section {
     margin-top: 12px;
+}
+
+.no-policy-message {
+    padding-top: 16px !important;
+    padding-bottom: 16px !important;
 }
 
 .slider-label {

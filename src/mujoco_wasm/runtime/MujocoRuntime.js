@@ -151,13 +151,31 @@ export class MujocoRuntime {
     async loadEnvironment({ scenePath, metaPath, policyPath }) {
         await this.stop();
         await this.loadScene(scenePath, metaPath);
-        
+
         if (policyPath) {
             await this.loadPolicy(policyPath);
+        } else {
+            await this.clearPolicy();
         }
         this.alive = true;
         this.running = true;
         this.startLoop();
+    }
+
+    async clearPolicy() {
+        this.policy = null;
+        this.policyConfig = null;
+        this.inputDict = null;
+        this.isInferencing = false;
+
+        if (this.actionManager && typeof this.actionManager.onPolicyCleared === 'function') {
+            await this.actionManager.onPolicyCleared();
+        }
+        for (const manager of this.observationManagers) {
+            if (typeof manager.onPolicyCleared === 'function') {
+                await manager.onPolicyCleared();
+            }
+        }
     }
 
     async loadScene(mjcfPath, metaPath) {
@@ -263,64 +281,43 @@ export class MujocoRuntime {
         this.inputDict = this.inputDict || (this.policy ? this.policy.initInput() : {});
         while (this.running) {
             const loopStart = performance.now();
-            if (!this.params.paused && this.model && this.state && this.simulation && this.policy) {
-                let time_start = performance.now();
-                const quat = this.simulation.qpos.subarray(3, 7);
-                this.quat.set(quat[1], quat[2], quat[3], quat[0]);
-                this.rpy.setFromQuaternion(this.quat);
+            const ready = !this.params.paused && this.model && this.state && this.simulation;
+            if (ready) {
+                if (this.policy) {
+                    let time_start = performance.now();
+                    const quat = this.simulation.qpos.subarray(3, 7);
+                    this.quat.set(quat[1], quat[2], quat[3], quat[0]);
+                    this.rpy.setFromQuaternion(this.quat);
 
-                const obsTensors = await this.collectObservations();
-                Object.assign(this.inputDict, obsTensors);
+                    const obsTensors = await this.collectObservations();
+                    Object.assign(this.inputDict, obsTensors);
 
-                try {
-                    await this.runInference();
-                } catch (e) {
-                    console.error('Inference error in main loop:', e);
-                    this.running = false;
-                    break;
+                    try {
+                        await this.runInference();
+                    } catch (e) {
+                        console.error('Inference error in main loop:', e);
+                        this.running = false;
+                        break;
+                    }
+
+                    let time_end = performance.now();
+                    const policy_inference_time = time_end - time_start;
+                    time_start = time_end;
+
+                    await this.executeSimulationSteps();
+
+                    time_end = performance.now();
+                    const sim_step_time = time_end - time_start;
+                    time_start = time_end;
+
+                    this.updateCachedState();
+
+                    time_end = performance.now();
+                    const update_render_time = time_end - time_start;
+                } else {
+                    await this.executeSimulationSteps();
+                    this.updateCachedState();
                 }
-
-                let time_end = performance.now();
-                const policy_inference_time = time_end - time_start;
-                time_start = time_end;
-
-                for (let substep = 0; substep < this.decimation; substep++) {
-                    const stepContext = {
-                        model: this.model,
-                        simulation: this.simulation,
-                        timestep: this.timestep,
-                        substep,
-                    };
-                    if (this.actionManager && typeof this.actionManager.beforeSimulationStep === 'function') {
-                        this.actionManager.beforeSimulationStep(stepContext);
-                    }
-                    for (const manager of this.envManagers) {
-                        if (typeof manager.beforeSimulationStep === 'function') {
-                            manager.beforeSimulationStep(stepContext);
-                        }
-                    }
-
-                    this.simulation.step();
-                    this.mujoco_time += this.timestep * 1000.0;
-                    this.simStepCount += 1;
-
-                    if (this.actionManager && typeof this.actionManager.afterSimulationStep === 'function') {
-                        this.actionManager.afterSimulationStep(stepContext);
-                    }
-                    for (const manager of this.envManagers) {
-                        if (typeof manager.afterSimulationStep === 'function') {
-                            manager.afterSimulationStep(stepContext);
-                        }
-                    }
-                }
-                time_end = performance.now();
-                const sim_step_time = time_end - time_start;
-                time_start = time_end;
-
-                this.updateCachedState();
-
-                time_end = performance.now();
-                const update_render_time = time_end - time_start;
             }
 
             const loopEnd = performance.now();
@@ -329,6 +326,38 @@ export class MujocoRuntime {
             await new Promise(resolve => setTimeout(resolve, sleepTime * 1000));
         }
         this.loopPromise = null;
+    }
+
+    async executeSimulationSteps() {
+        for (let substep = 0; substep < this.decimation; substep++) {
+            const stepContext = {
+                model: this.model,
+                simulation: this.simulation,
+                timestep: this.timestep,
+                substep,
+            };
+            if (this.actionManager && typeof this.actionManager.beforeSimulationStep === 'function') {
+                this.actionManager.beforeSimulationStep(stepContext);
+            }
+            for (const manager of this.envManagers) {
+                if (typeof manager.beforeSimulationStep === 'function') {
+                    manager.beforeSimulationStep(stepContext);
+                }
+            }
+
+            this.simulation.step();
+            this.mujoco_time += this.timestep * 1000.0;
+            this.simStepCount += 1;
+
+            if (this.actionManager && typeof this.actionManager.afterSimulationStep === 'function') {
+                this.actionManager.afterSimulationStep(stepContext);
+            }
+            for (const manager of this.envManagers) {
+                if (typeof manager.afterSimulationStep === 'function') {
+                    manager.afterSimulationStep(stepContext);
+                }
+            }
+        }
     }
 
     async collectObservations() {

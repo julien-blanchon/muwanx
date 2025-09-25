@@ -10,6 +10,7 @@ export class IsaacActionManager extends BaseManager {
         this.actionBuffer = [];
         this.actionSmoothing = options.actionSmoothing ?? { prev: 0.2, current: 0.8 };
         this.decimation = 1;
+        this.defaultActuatorParams = null;
     }
 
     async onSceneLoaded({ model, simulation, assetMeta }) {
@@ -70,17 +71,85 @@ export class IsaacActionManager extends BaseManager {
         this.runtime.qposAdrIsaac = this.qposAdrIsaac;
         this.runtime.qvelAdrIsaac = this.qvelAdrIsaac;
         this.decimation = Math.max(1, Math.round(0.02 / model.getOptions().timestep));
+
+        this.initializeDefaultActuatorParams(assetMeta);
     }
 
     async onPolicyLoaded({ config }) {
         this.controlType = config.control_type ?? 'joint_position';
-        this.actionScale = new Float32Array(this.numActions).fill(config.action_scale ?? 1.0);
-        this.jntKp = new Float32Array(this.numActions).fill(config.stiffness ?? 0);
-        this.jntKd = new Float32Array(this.numActions).fill(config.damping ?? 0);
+        this.setActuatorParams({
+            actionScale: config.action_scale,
+            stiffness: config.stiffness,
+            damping: config.damping,
+        });
+        this.runtime.controlType = this.controlType;
+    }
+
+    async onPolicyCleared() {
+        this.controlType = 'joint_position';
+        if (this.defaultActuatorParams) {
+            this.setActuatorParams(this.defaultActuatorParams);
+        } else {
+            this.setActuatorParams({});
+        }
+        this.runtime.controlType = this.controlType;
+    }
+
+    initializeDefaultActuatorParams(assetMeta) {
+        const actuators = assetMeta?.actuators || {};
+        let defaultParams = {
+            actionScale: 1.0,
+            stiffness: 0.0,
+            damping: 0.0,
+        };
+
+        for (const actuatorConfig of Object.values(actuators)) {
+            if (!actuatorConfig || typeof actuatorConfig !== 'object') {
+                continue;
+            }
+            if (typeof actuatorConfig.action_scale === 'number') {
+                defaultParams.actionScale = actuatorConfig.action_scale;
+            }
+            if (typeof actuatorConfig.stiffness === 'number') {
+                defaultParams.stiffness = actuatorConfig.stiffness;
+            }
+            if (typeof actuatorConfig.damping === 'number') {
+                defaultParams.damping = actuatorConfig.damping;
+            }
+            break;
+        }
+
+        this.defaultActuatorParams = defaultParams;
+        this.setActuatorParams(defaultParams);
+    }
+
+    setActuatorParams({ actionScale, stiffness, damping } = {}) {
+        const resolvedActionScale = this.normalizeParam(actionScale, 1.0);
+        const resolvedStiffness = this.normalizeParam(stiffness, 0.0);
+        const resolvedDamping = this.normalizeParam(damping, 0.0);
+
+        this.actionScale = resolvedActionScale;
+        this.jntKp = resolvedStiffness;
+        this.jntKd = resolvedDamping;
+
         this.runtime.actionScale = this.actionScale;
         this.runtime.jntKp = this.jntKp;
         this.runtime.jntKd = this.jntKd;
-        this.runtime.controlType = this.controlType;
+    }
+
+    normalizeParam(value, fallback) {
+        if (value instanceof Float32Array && value.length === this.numActions) {
+            return value;
+        }
+        if (Array.isArray(value)) {
+            const array = new Float32Array(this.numActions);
+            for (let i = 0; i < this.numActions; i++) {
+                array[i] = typeof value[i] === 'number' ? value[i] : fallback;
+            }
+            return array;
+        }
+        const fillValue = typeof value === 'number' ? value : fallback;
+        return new Float32Array(this.numActions).fill(fillValue);
     }
 
     onPolicyOutput(result) {
