@@ -12,6 +12,11 @@ export class LocomotionEnvManager extends BaseManager {
         this.impulseForce = options.impulseForce ?? new THREE.Vector3(0, 50, 0);
         this.serviceName = options.serviceName ?? 'setpoint-control';
         this.defaultBallPosition = new THREE.Vector3(0, this.ballHeight, 0);
+        this.activePolicyId = null;
+        this.isFacetPolicyActive = false;
+        this.desiredVisibility = false;
+        this.useSetpointActive = false;
+        this.compliantModeActive = false;
     }
 
     onRuntimeAttached(runtime) {
@@ -20,12 +25,13 @@ export class LocomotionEnvManager extends BaseManager {
         this.renderer = runtime.renderer;
         this.controls = runtime.controls;
         this.container = runtime.container.parentElement;
-        this.createSetpointBall();
+        this.createFacetBall();
         this.dragStateManager = new DragStateManager(this.scene, this.renderer, this.camera, this.container, this.controls);
         runtime.registerService(this.serviceName, this.createServiceInterface());
+        this.updateBallPresence();
     }
 
-    createSetpointBall() {
+    createFacetBall() {
         const ballGeometry = new THREE.SphereGeometry(0.05, 16, 16);
         const ballMaterial = new THREE.MeshStandardMaterial({
             color: 0xef4444,
@@ -33,39 +39,86 @@ export class LocomotionEnvManager extends BaseManager {
             roughness: 0.2,
         });
         this.ball = new THREE.Mesh(ballGeometry, ballMaterial);
+        this.ball.name = 'facetball';
         this.ball.position.copy(this.defaultBallPosition);
         this.ball.castShadow = true;
-        this.ball.bodyID = 'setpoint';
-        this.scene.add(this.ball);
+        this.ball.bodyID = 'facetball';
+        this.ball.visible = false;
         this.runtime.ball = this.ball;
+    }
+
+    setActivePolicy(policyId) {
+        this.activePolicyId = policyId;
+        const isFacet = policyId === 'facet';
+        if (this.isFacetPolicyActive !== isFacet) {
+            this.isFacetPolicyActive = isFacet;
+            if (!isFacet && this.dragStateManager?.physicsObject === this.ball) {
+                this.dragStateManager.end?.({ type: 'facetball-hidden' });
+            }
+            this.updateBallPresence();
+        }
+    }
+
+    setBallVisibilityState(visible) {
+        this.desiredVisibility = Boolean(visible);
+        this.updateBallPresence();
+    }
+
+    setUseSetpointActive(flag) {
+        this.useSetpointActive = Boolean(flag);
+        this.updateBallPresence();
+    }
+
+    setCompliantModeActive(flag, kp) {
+        this.compliantModeActive = Boolean(flag);
+        if (typeof kp === 'number') {
+            this.runtime.params.impedance_kp = kp;
+        }
+        this.updateBallPresence();
+    }
+
+    updateBallPresence() {
+        if (!this.ball || !this.scene) {
+            return;
+        }
+        const shouldDisplay = this.isFacetPolicyActive && !this.compliantModeActive && (this.useSetpointActive || this.desiredVisibility);
+        if (shouldDisplay) {
+            if (!this.ball.parent) {
+                this.scene.add(this.ball);
+            }
+        } else if (this.ball.parent) {
+            this.scene.remove(this.ball);
+            if (this.dragStateManager?.physicsObject === this.ball) {
+                this.dragStateManager.end?.({ type: 'facetball-hidden' });
+            }
+        }
+        this.ball.visible = shouldDisplay;
     }
 
     createServiceInterface() {
         return {
             ball: this.ball,
+            setActivePolicy: (policyId) => {
+                this.setActivePolicy(policyId);
+            },
             setVisible: (visible) => {
-                this.ball.visible = visible;
+                this.setBallVisibilityState(visible);
             },
             setPosition: (x, y, z) => {
                 this.ball.position.set(x, y, z);
             },
             reset: () => {
                 this.ball.position.copy(this.defaultBallPosition);
+                this.updateBallPresence();
             },
             onSetpointEnabled: () => {
-                this.ball.visible = true;
+                this.setUseSetpointActive(true);
             },
             onSetpointDisabled: () => {
-                this.ball.visible = false;
+                this.setUseSetpointActive(false);
             },
             onCompliantModeChange: (flag, kp) => {
-                if (flag) {
-                    this.ball.visible = false;
-                } else if (this.runtime?.params?.use_setpoint) {
-                    this.ball.visible = true;
-                } else {
-                    this.ball.visible = false;
-                }
+                this.setCompliantModeActive(flag, kp);
             },
             onImpedanceChange: () => {},
             onImpulseTriggered: () => {},
@@ -107,7 +160,7 @@ export class LocomotionEnvManager extends BaseManager {
             }
             this.dragStateManager.update();
             if (this.dragStateManager.physicsObject) {
-                if (this.dragStateManager.physicsObject.bodyID === 'setpoint') {
+                if (this.dragStateManager.physicsObject.bodyID === 'facetball') {
                     this.ball.position.x = this.dragStateManager.currentWorld.x;
                     this.ball.position.z = this.dragStateManager.currentWorld.z;
                 } else {
@@ -140,7 +193,9 @@ export class LocomotionEnvManager extends BaseManager {
 
     dispose() {
         if (this.ball) {
-            this.scene.remove(this.ball);
+            if (this.ball.parent) {
+                this.scene.remove(this.ball);
+            }
             this.ball.geometry.dispose();
             this.ball.material.dispose();
         }

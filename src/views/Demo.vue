@@ -280,6 +280,7 @@ export default {
                     metaPath: initialTask.asset_meta,
                     policyPath: initialPolicy?.path,
                 });
+                this.updateFacetballService(initialPolicy);
                 this.runtime.resume();
                 this.applyCommandState();
                 this.state = 1;
@@ -314,6 +315,7 @@ export default {
                 metaPath: selectedTask.asset_meta,
                 policyPath: selectedPolicy?.path,
             });
+            this.updateFacetballService(selectedPolicy);
             this.runtime.resume();
             this.applyCommandState();
         },
@@ -327,12 +329,7 @@ export default {
             await this.runtime.loadPolicy(selectedPolicy.path);
             this.runtime.startLoop();
             this.runtime.resume();
-            const setpointService = this.runtime.getService?.('setpoint-control');
-            const showSetpoint = selectedPolicy.show_setpoint ?? (this.policy === 'facet');
-            setpointService?.setVisible?.(showSetpoint || this.use_setpoint);
-            if (showSetpoint) {
-                setpointService?.reset?.();
-            }
+            this.updateFacetballService(selectedPolicy);
             this.applyCommandState();
         },
         async reloadDefaultPolicyAndResetSimulation() {
@@ -356,12 +353,25 @@ export default {
                     });
                 }
                 this.runtime.resume();
+                this.updateFacetballService(defaultPolicy);
 
                 // Reset simulation after loading default policy or environment
                 await this.runtime.reset();
                 this.applyCommandState();
             } catch (error) {
                 console.error('Failed to reload default policy and reset simulation:', error);
+            }
+        },
+        updateFacetballService(selectedPolicy) {
+            if (!this.runtime) return;
+            const setpointService = this.runtime.getService?.('setpoint-control');
+            if (!setpointService) return;
+            const policyId = selectedPolicy?.id ?? this.policy ?? null;
+            setpointService.setActivePolicy?.(policyId);
+            const showSetpoint = selectedPolicy?.show_setpoint ?? (policyId === 'facet');
+            setpointService.setVisible?.(showSetpoint || this.use_setpoint);
+            if (showSetpoint) {
+                setpointService.reset?.();
             }
         },
         async resetSimulation() {
