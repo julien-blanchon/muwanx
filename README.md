@@ -1,40 +1,34 @@
 <div align="center">
-    <h1>Muwanx</h1>
-    <em>Lightweight browser-based RL demo with MuJoCo and ONNX</em>
+  <img src="public/muwanx_banner.png" alt="muwanx">
+</div>
+<div align="center">
+    <em>Client-only MuJoCo + ONNX Reinforcement Learning Playground</em>
 </div>
 
 <br>
 
 <p align="center">
-    <a href="https://github.com/ttktjmt/muwanx/actions/workflows/deploy.yml"><img
-    src="https://github.com/ttktjmt/muwanx/actions/workflows/deploy.yml/badge.svg"
-    alt="GitHub Pages CI"
-    /></a>
-    <a href="https://github.com/ttktjmt/muwanx/blob/main/LICENSE"><img
-    src="https://img.shields.io/github/license/ttktjmt/muwanx"
-    alt="License"
-    /></a>
+    <a href="https://github.com/ttktjmt/muwanx/actions/workflows/deploy.yml"><img src="https://github.com/ttktjmt/muwanx/actions/workflows/deploy.yml/badge.svg" alt="GitHub Pages CI"/></a>
+    <a href="https://ttktjmt.github.io/muwanx/"><img src="https://img.shields.io/badge/demo-🚀%20live-green" alt="Live Demo"/></a>
+    <a href="https://github.com/ttktjmt/muwanx/blob/main/LICENSE"><img src="https://img.shields.io/github/license/ttktjmt/muwanx" alt="License"/></a>
 </p>
 
-</p>
+---
 
-## What is Muwanx?
+**Muwanx** is a reinforcement learning demo web application built with [mujoco_wasm](https://github.com/zalo/mujoco_wasm/) and [ONNX Runtime Web](https://www.onnxruntime.ai/docs/build/web.html). This allows you to run MuJoCo simulations in real-time with trained policies controlling entirely client-side. Ideal for sharing interactive demos as a static site (e.g., hosting on GitHub Pages), prototyping policies, or building customizable RL playgrounds directly in the browser.
 
-**Muwanx** is a lightweight, browser-based reinforcement learning demo web application built with [mujoco_wasm](https://github.com/zalo/mujoco_wasm/) and [ONNX Runtime Web](https://www.onnxruntime.ai/docs/build/web.html). This allows you to run MuJoCo simulations in real-time with trained policies controlling entirely client-side. Ideal for sharing interactive demos as a static site (e.g., hosting on GitHub Pages), prototyping policies, or building customizable RL playgrounds directly in the browser.
-### 🚀 [Visit the Live Demo Here](https://ttktjmt.github.io/muwanx/)
+### 🚀 [Visit the Live Demo](https://ttktjmt.github.io/muwanx/)
 
 ## Features
-
-- Real-time control of MuJoCo simulations with trained policies
-- Apply force to the simulation for testing the robustness of the policies
-- Change the state of the goal that policies reference
-- Fully client-side execution using MuJoCo compiled in WebAssembly and ONNX Runtime Web
-- Easy to share and host as a static site (e.g., GitHub Pages)
-- Customizable reinforcement learning playgrounds
+- **Real-time**: Run MuJoCo simulations with real-time policy control.
+- **Interactive**: Change the state of objects by applying forces.
+- **Client-only**: All computation runs in the browser. No server for simulation required.
+- **Easy Sharing**: Host as a static site for effortless demo distribution (e.g., GitHub Pages).
+- **Customizable**: Add your own MuJoCo models and ONNX policies quickly.
 
 ## Quick Start
 
-To run Muwanx locally, ensure you have [Node.js](https://nodejs.org/) installed, then execute the following commands in your terminal.
+To run muwanx locally, ensure you have [Node.js](https://nodejs.org/) installed, then execute the following commands in your terminal.
 
 Clone the repository on your local machine:
 ```bash
