@@ -1,7 +1,6 @@
 // plugins/router.js
 import { createRouter, createWebHistory, createWebHashHistory } from 'vue-router'
 import Demo from '@/views/Demo.vue'
-import MyoSuiteDemo from '@/views/MyoSuiteDemo.vue'
 
 const routes = [
     {
@@ -12,7 +11,7 @@ const routes = [
     {
         path: '/myosuite',
         name: 'MyoSuite',
-        component: MyoSuiteDemo
+        component: Demo,
     },
 ]
 
