@@ -125,13 +125,15 @@
                         <div class="force-description">
                             Drag on the robot to apply force
                         </div>
-                        <v-btn @click="StartImpulse" color="primary" block :size="isMobile ? 'large' : 'default'"
-                            class="impulse-button">
-                            Impulse
-                        </v-btn>
-                        <div class="force-description">
-                            Click the button to apply an impulse
-                        </div>
+                        <template v-if="task.name === 'Go2'">
+                            <v-btn @click="StartImpulse" color="primary" block :size="isMobile ? 'large' : 'default'"
+                                class="impulse-button">
+                                Impulse
+                            </v-btn>
+                            <div class="force-description">
+                                Click the button to apply an impulse
+                            </div>
+                        </template>
                     </v-card-text>
                 </v-tabs-window-item>
             </v-tabs-window>

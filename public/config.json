@@ -25,9 +25,9 @@
     },
     {
       "id": "3",
-      "name": "Go1 NoPol",
-      "model_xml": "unitree_go1/go1.xml",
-      "asset_meta": "./examples/checkpoints/go1/asset_meta.json",
+      "name": "Berkeley",
+      "model_xml": "berkeley_humanoid/scene.xml",
+      "asset_meta": "./examples/checkpoints/berkeley_humanoid/asset_meta.json",
       "default_policy": null,
       "policies": []
     }

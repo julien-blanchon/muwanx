@@ -40,5 +40,20 @@
   "unitree_go2/meshes/thigh.stl",
   "unitree_go2/meshes/thigh_mirror.stl",
   "unitree_go2/scene.xml",
-  "unitree_go2/scene_mjx.xml"
+  "unitree_go2/scene_mjx.xml",
+  "berkeley_humanoid/assets/ll_faa.stl",
+  "berkeley_humanoid/assets/ll_ffe.stl",
+  "berkeley_humanoid/assets/ll_haa.stl",
+  "berkeley_humanoid/assets/ll_hfe.stl",
+  "berkeley_humanoid/assets/ll_hr.stl",
+  "berkeley_humanoid/assets/ll_kfe.stl",
+  "berkeley_humanoid/assets/lr_faa.stl",
+  "berkeley_humanoid/assets/lr_ffe.stl",
+  "berkeley_humanoid/assets/lr_haa.stl",
+  "berkeley_humanoid/assets/lr_hfe.stl",
+  "berkeley_humanoid/assets/lr_hr.stl",
+  "berkeley_humanoid/assets/lr_kfe.stl",
+  "berkeley_humanoid/assets/torso.stl",
+  "berkeley_humanoid/berkeley_humanoid.xml",
+  "berkeley_humanoid/scene.xml"
 ]
