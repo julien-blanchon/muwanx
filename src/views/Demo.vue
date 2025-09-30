@@ -114,7 +114,7 @@
                     <v-card-text v-else :class="{ 'mobile-padding': isMobile }" class="no-policy-message">
                         <div class="control-section-title">Policy Controls</div>
                         <div class="force-description">
-                            No policy is configured for this task. The simulation runs with default joint targets only.
+                            No policy is configured for this task.
                         </div>
                     </v-card-text>
 
