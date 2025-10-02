@@ -1,4 +1,11 @@
 <template>
+    <transition name="fade">
+        <div v-if="isTransitioning" class="transition-overlay">
+            <v-progress-circular indeterminate color="primary" size="64"></v-progress-circular>
+            <div class="transition-text">{{ transitionMessage || 'Loading...' }}</div>
+        </div>
+    </transition>
+
     <div id="mujoco-container" class="mujoco-container">
         <!-- this is for placing the background demo -->
     </div>
@@ -197,7 +204,7 @@
 <script>
 import { MujocoRuntime, GoCommandManager, IsaacActionManager, ConfigObservationManager, LocomotionEnvManager } from '@/mujoco_wasm/examples/main.js';
 import load_mujoco from '@/mujoco_wasm/dist/mujoco_wasm.js';
-import { markRaw } from 'vue';
+import { markRaw, nextTick } from 'vue';
 
 export default {
     name: 'DemoPage',
@@ -221,6 +228,8 @@ export default {
         isMobile: false,
         isSmallScreen: false,
         isPanelCollapsed: false,
+        isTransitioning: false,
+        transitionMessage: '',
     }),
     methods: {
         resolveDefaultPolicy(task) {
@@ -229,6 +238,25 @@ export default {
                 return task.default_policy;
             }
             return task.policies?.[0]?.id ?? null;
+        },
+        async withTransition(message, action) {
+            this.transitionMessage = message;
+            this.isTransitioning = true;
+            await nextTick();
+            try {
+                return await action();
+            } finally {
+                this.isTransitioning = false;
+                this.transitionMessage = '';
+            }
+        },
+        resolveSceneConfig(task, policy) {
+            if (!task) {
+                return { scenePath: null, metaPath: null };
+            }
+            const scenePath = policy?.model_xml ?? task.model_xml;
+            const metaPath = policy?.asset_meta ?? task.asset_meta;
+            return { scenePath, metaPath };
         },
         applyCommandState() {
             if (!this.commandManager) {
@@ -277,9 +305,10 @@ export default {
                     envManagers: [this.envManager],
                 }));
 
+                const { scenePath, metaPath } = this.resolveSceneConfig(initialTask, initialPolicy);
                 await this.runtime.init({
-                    scenePath: initialTask.model_xml,
-                    metaPath: initialTask.asset_meta,
+                    scenePath,
+                    metaPath,
                     policyPath: initialPolicy?.path,
                 });
                 this.updateFacetballService(initialPolicy);
@@ -312,14 +341,17 @@ export default {
             this.policy = this.resolveDefaultPolicy(selectedTask);
             if (!this.runtime) return;
             const selectedPolicy = selectedTask.policies.find(p => p.id === this.policy);
-            await this.runtime.loadEnvironment({
-                scenePath: selectedTask.model_xml,
-                metaPath: selectedTask.asset_meta,
-                policyPath: selectedPolicy?.path,
+            const { scenePath, metaPath } = this.resolveSceneConfig(selectedTask, selectedPolicy);
+            await this.withTransition('Switching scene...', async () => {
+                await this.runtime.loadEnvironment({
+                    scenePath,
+                    metaPath,
+                    policyPath: selectedPolicy?.path,
+                });
+                this.updateFacetballService(selectedPolicy);
+                this.runtime.resume();
+                this.applyCommandState();
             });
-            this.updateFacetballService(selectedPolicy);
-            this.runtime.resume();
-            this.applyCommandState();
         },
         async updatePolicyCallback() {
             const selectedTask = this.config.tasks.find(t => t.id === this.task);
@@ -327,12 +359,17 @@ export default {
             if (!selectedPolicy) return;
 
             if (!this.runtime) return;
-            await this.runtime.stop();
-            await this.runtime.loadPolicy(selectedPolicy.path);
-            this.runtime.startLoop();
-            this.runtime.resume();
-            this.updateFacetballService(selectedPolicy);
-            this.applyCommandState();
+            const { scenePath, metaPath } = this.resolveSceneConfig(selectedTask, selectedPolicy);
+            await this.withTransition('Switching policy...', async () => {
+                await this.runtime.loadEnvironment({
+                    scenePath,
+                    metaPath,
+                    policyPath: selectedPolicy.path,
+                });
+                this.updateFacetballService(selectedPolicy);
+                this.runtime.resume();
+                this.applyCommandState();
+            });
         },
         async reloadDefaultPolicyAndResetSimulation() {
             if (!this.runtime) return;
@@ -344,22 +381,20 @@ export default {
             const defaultPolicy = selectedTask.policies.find(p => p.id === this.policy);
 
             try {
-                if (defaultPolicy) {
-                    await this.runtime.stop();
-                    await this.runtime.loadPolicy(defaultPolicy.path);
-                    this.runtime.startLoop();
-                } else {
+                const { scenePath, metaPath } = this.resolveSceneConfig(selectedTask, defaultPolicy);
+                await this.withTransition('Reloading default policy...', async () => {
                     await this.runtime.loadEnvironment({
-                        scenePath: selectedTask.model_xml,
-                        metaPath: selectedTask.asset_meta,
+                        scenePath,
+                        metaPath,
+                        policyPath: defaultPolicy?.path,
                     });
-                }
-                this.runtime.resume();
-                this.updateFacetballService(defaultPolicy);
+                    this.updateFacetballService(defaultPolicy);
+                    this.runtime.resume();
 
-                // Reset simulation after loading default policy or environment
-                await this.runtime.reset();
-                this.applyCommandState();
+                    // Reset simulation after loading default policy or environment
+                    await this.runtime.reset();
+                    this.applyCommandState();
+                });
             } catch (error) {
                 console.error('Failed to reload default policy and reset simulation:', error);
             }
@@ -723,5 +758,34 @@ export default {
 
 .notice-link:hover {
     text-decoration: underline;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
+}
+
+.transition-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    z-index: 2000;
+    backdrop-filter: blur(2px);
+}
+
+.transition-text {
+    color: #fff;
+    font-size: 1rem;
+    letter-spacing: 0.02em;
 }
 </style>

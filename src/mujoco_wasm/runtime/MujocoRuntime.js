@@ -130,7 +130,6 @@ export class MujocoRuntime {
     }
 
     async init(initialConfig = {}) {
-        await downloadExampleScenesFolder(this.mujoco);
         if (this.commandManager && typeof this.commandManager.onInit === 'function') {
             await this.commandManager.onInit();
         }
@@ -150,6 +149,7 @@ export class MujocoRuntime {
 
     async loadEnvironment({ scenePath, metaPath, policyPath }) {
         await this.stop();
+        await downloadExampleScenesFolder(this.mujoco, scenePath);
         await this.loadScene(scenePath, metaPath);
 
         if (policyPath) {

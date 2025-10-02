@@ -1,6 +1,28 @@
 import * as THREE from 'three';
 import { Reflector } from '../../examples/utils/Reflector.js';
 
+const SCENE_BASE_URL = './examples/scenes';
+const BINARY_EXTENSIONS = ['.png', '.stl', '.skn', '.mjb'];
+const sceneDownloadPromises = new Map();
+
+function isBinaryAsset(path) {
+    const lower = path.toLowerCase();
+    return BINARY_EXTENSIONS.some(ext => lower.endsWith(ext));
+}
+
+function ensureWorkingDirectories(mujoco, segments) {
+    if (!segments.length) {
+        return;
+    }
+    let working = '/working';
+    for (const segment of segments) {
+        working += `/${segment}`;
+        if (!mujoco.FS.analyzePath(working).exists) {
+            mujoco.FS.mkdir(working);
+        }
+    }
+}
+
 export async function loadSceneFromURL(mujoco, filename, parent) {
   if (parent.simulation != null) {
     parent.simulation.free();
@@ -299,26 +321,60 @@ export function toMujocoPos(target) {
     return target.set(target.x, -target.z, target.y);
 }
 
-export async function downloadExampleScenesFolder(mujoco) {
-    const response = await fetch('./examples/scenes/files.json');
-    const allFiles = await response.json();
+export async function downloadExampleScenesFolder(mujoco, scenePath) {
+    if (!scenePath) {
+        return;
+    }
 
-    const requests = allFiles.map((url) => fetch(`./examples/scenes/${url}`));
-    const responses = await Promise.all(requests);
+    const normalizedPath = scenePath.replace(/^[./]+/, '');
+    const [sceneRoot] = normalizedPath.split('/');
+    if (!sceneRoot) {
+        return;
+    }
 
-    for (let i = 0; i < responses.length; i++) {
-        const split = allFiles[i].split('/');
-        let working = '/working/';
-        for (let f = 0; f < split.length - 1; f++) {
-            working += split[f];
-            if (!mujoco.FS.analyzePath(working).exists) { mujoco.FS.mkdir(working); }
-            working += '/';
+    if (sceneDownloadPromises.has(sceneRoot)) {
+        return sceneDownloadPromises.get(sceneRoot);
+    }
+
+    const downloadPromise = (async () => {
+        const manifestResponse = await fetch(`${SCENE_BASE_URL}/${sceneRoot}/files.json`);
+        if (!manifestResponse.ok) {
+            throw new Error(`Failed to load scene manifest for ${sceneRoot}: ${manifestResponse.status}`);
         }
 
-        if (allFiles[i].endsWith('.png') || allFiles[i].endsWith('.stl') || allFiles[i].endsWith('.skn')) {
-            mujoco.FS.writeFile(`/working/${allFiles[i]}`, new Uint8Array(await responses[i].arrayBuffer()));
-        } else {
-            mujoco.FS.writeFile(`/working/${allFiles[i]}`, await responses[i].text());
+        const manifest = await manifestResponse.json();
+        if (!Array.isArray(manifest)) {
+            throw new Error(`Invalid scene manifest for ${sceneRoot}`);
         }
+
+        const requests = manifest.map((relativePath) => fetch(`${SCENE_BASE_URL}/${sceneRoot}/${relativePath}`));
+        const responses = await Promise.all(requests);
+
+        for (let i = 0; i < responses.length; i++) {
+            const response = responses[i];
+            if (!response.ok) {
+                throw new Error(`Failed to fetch scene asset ${sceneRoot}/${manifest[i]}: ${response.status}`);
+            }
+
+            const relativePath = manifest[i];
+            const assetPath = `${sceneRoot}/${relativePath}`;
+            const segments = assetPath.split('/');
+            ensureWorkingDirectories(mujoco, segments.slice(0, -1));
+
+            const targetPath = `/working/${assetPath}`;
+            if (isBinaryAsset(relativePath)) {
+                mujoco.FS.writeFile(targetPath, new Uint8Array(await response.arrayBuffer()));
+            } else {
+                mujoco.FS.writeFile(targetPath, await response.text());
+            }
+        }
+    })();
+
+    sceneDownloadPromises.set(sceneRoot, downloadPromise);
+    try {
+        await downloadPromise;
+    } catch (error) {
+        sceneDownloadPromises.delete(sceneRoot);
+        throw error;
     }
 }
