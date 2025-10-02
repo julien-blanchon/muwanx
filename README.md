@@ -25,7 +25,7 @@ Perfect for sharing interactive demos as static sites (such as GitHub Pages), ra
 - **Real-time**: Run MuJoCo simulations with real-time policy control.
 - **Interactive**: Change the state of objects by applying forces.
 - **Cross-platform**: Works seamlessly on desktop and mobile devices.
-- **Client-only**: All computation runs in the browser. No server for simulation required.
+- **Client-only**: All computation runs in the browser. No server for simulation is required.
 - **Easy Sharing**: Host as a static site for effortless demo distribution (e.g., GitHub Pages).
 - **Customizable**: Add your own MuJoCo models and ONNX policies quickly.
 

@@ -43,3 +43,7 @@ Thumbs.db
 
 # Artifacts
 /dist
+
+# Python virtual environments
+venv
+.venv
