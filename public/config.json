@@ -27,7 +27,7 @@
       "id": "3",
       "name": "Berkeley",
       "model_xml": "berkeley_humanoid/scene.xml",
-      "asset_meta": "./examples/checkpoints/berkeley_humanoid/asset_meta.json",
+      "asset_meta": null,
       "default_policy": null,
       "policies": []
     }

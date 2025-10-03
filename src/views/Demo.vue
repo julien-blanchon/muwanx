@@ -202,7 +202,7 @@
 </template>
 
 <script>
-import { MujocoRuntime, GoCommandManager, IsaacActionManager, ConfigObservationManager, LocomotionEnvManager } from '@/mujoco_wasm/examples/main.js';
+import { MujocoRuntime, GoCommandManager, IsaacActionManager, PassiveActionManager, ConfigObservationManager, LocomotionEnvManager } from '@/mujoco_wasm/examples/main.js';
 import load_mujoco from '@/mujoco_wasm/dist/mujoco_wasm.js';
 import { markRaw, nextTick } from 'vue';
 
@@ -255,8 +255,34 @@ export default {
                 return { scenePath: null, metaPath: null };
             }
             const scenePath = policy?.model_xml ?? task.model_xml;
-            const metaPath = policy?.asset_meta ?? task.asset_meta;
+            const metaRaw = policy?.asset_meta ?? task.asset_meta ?? null;
+            const metaPath = metaRaw === 'null' || metaRaw === '' ? null : metaRaw;
             return { scenePath, metaPath };
+        },
+        hasAssetMeta(metaPath) {
+            return Boolean(metaPath);
+        },
+        async ensureActionManager(metaPath) {
+            const needsIsaac = this.hasAssetMeta(metaPath);
+            const currentManager = this.actionManager;
+            if (needsIsaac && currentManager instanceof IsaacActionManager) {
+                return;
+            }
+            if (!needsIsaac && currentManager instanceof PassiveActionManager) {
+                return;
+            }
+            const nextManager = markRaw(needsIsaac ? new IsaacActionManager() : new PassiveActionManager());
+            if (this.runtime) {
+                if (this.runtime.actionManager && typeof this.runtime.actionManager.dispose === 'function') {
+                    this.runtime.actionManager.dispose();
+                }
+                this.runtime.actionManager = nextManager;
+                nextManager.attachRuntime(this.runtime);
+                if (typeof nextManager.onInit === 'function') {
+                    await nextManager.onInit();
+                }
+            }
+            this.actionManager = nextManager;
         },
         applyCommandState() {
             if (!this.commandManager) {
@@ -290,13 +316,14 @@ export default {
                 console.log(this.config);
                 if (!this.config.tasks.length) return;
                 const mujoco = await load_mujoco();
-                this.commandManager = markRaw(new GoCommandManager());
-                this.actionManager = markRaw(new IsaacActionManager());
-                this.observationManager = markRaw(new ConfigObservationManager());
-                this.envManager = markRaw(new LocomotionEnvManager());
-
                 const initialTask = this.config.tasks[0];
                 const initialPolicy = initialTask.policies.find(p => p.id === initialTask.default_policy) ?? initialTask.policies[0];
+                const { scenePath, metaPath } = this.resolveSceneConfig(initialTask, initialPolicy);
+
+                await this.ensureActionManager(metaPath);
+                this.commandManager = markRaw(new GoCommandManager());
+                this.observationManager = markRaw(new ConfigObservationManager());
+                this.envManager = markRaw(new LocomotionEnvManager());
 
                 this.runtime = markRaw(new MujocoRuntime(mujoco, {
                     commandManager: this.commandManager,
@@ -304,8 +331,6 @@ export default {
                     observationManagers: [this.observationManager],
                     envManagers: [this.envManager],
                 }));
-
-                const { scenePath, metaPath } = this.resolveSceneConfig(initialTask, initialPolicy);
                 await this.runtime.init({
                     scenePath,
                     metaPath,
@@ -343,6 +368,7 @@ export default {
             const selectedPolicy = selectedTask.policies.find(p => p.id === this.policy);
             const { scenePath, metaPath } = this.resolveSceneConfig(selectedTask, selectedPolicy);
             await this.withTransition('Switching scene...', async () => {
+                await this.ensureActionManager(metaPath);
                 await this.runtime.loadEnvironment({
                     scenePath,
                     metaPath,
@@ -361,6 +387,7 @@ export default {
             if (!this.runtime) return;
             const { scenePath, metaPath } = this.resolveSceneConfig(selectedTask, selectedPolicy);
             await this.withTransition('Switching policy...', async () => {
+                await this.ensureActionManager(metaPath);
                 await this.runtime.loadEnvironment({
                     scenePath,
                     metaPath,
@@ -383,6 +410,7 @@ export default {
             try {
                 const { scenePath, metaPath } = this.resolveSceneConfig(selectedTask, defaultPolicy);
                 await this.withTransition('Reloading default policy...', async () => {
+                    await this.ensureActionManager(metaPath);
                     await this.runtime.loadEnvironment({
                         scenePath,
                         metaPath,

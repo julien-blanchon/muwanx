@@ -183,8 +183,11 @@ export class MujocoRuntime {
         [this.model, this.state, this.simulation, this.bodies, this.lights] =
             await loadSceneFromURL(this.mujoco, mjcfPath, this);
 
-        const response = await fetch(metaPath);
-        const assetMeta = await response.json();
+        let assetMeta = null;
+        if (metaPath && metaPath !== 'null') {
+            const response = await fetch(metaPath);
+            assetMeta = await response.json();
+        }
 
         this.timestep = this.model.getOptions().timestep;
         this.decimation = Math.round(0.02 / this.timestep);
