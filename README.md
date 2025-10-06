@@ -53,4 +53,4 @@ This project has greatly benefited from the contributions of the [Facet](https:/
 
 ## License
 
-This project is licensed under the [MIT License](./LICENSE).
+This project is licensed under the [Apache License](./LICENSE).
