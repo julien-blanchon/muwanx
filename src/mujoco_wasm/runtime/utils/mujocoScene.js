@@ -327,37 +327,42 @@ export async function downloadExampleScenesFolder(mujoco, scenePath) {
     }
 
     const normalizedPath = scenePath.replace(/^[./]+/, '');
-    const [sceneRoot] = normalizedPath.split('/');
-    if (!sceneRoot) {
+    const pathParts = normalizedPath.split('/');
+    
+    // Get the directory containing the XML file
+    const xmlDirectory = pathParts.slice(0, -1).join('/');
+    if (!xmlDirectory) {
         return;
     }
 
-    if (sceneDownloadPromises.has(sceneRoot)) {
-        return sceneDownloadPromises.get(sceneRoot);
+    // Use the XML file directory as the cache key
+    const cacheKey = xmlDirectory;
+    if (sceneDownloadPromises.has(cacheKey)) {
+        return sceneDownloadPromises.get(cacheKey);
     }
 
     const downloadPromise = (async () => {
-        const manifestResponse = await fetch(`${SCENE_BASE_URL}/${sceneRoot}/files.json`);
+        const manifestResponse = await fetch(`${SCENE_BASE_URL}/${xmlDirectory}/files.json`);
         if (!manifestResponse.ok) {
-            throw new Error(`Failed to load scene manifest for ${sceneRoot}: ${manifestResponse.status}`);
+            throw new Error(`Failed to load scene manifest for ${xmlDirectory}: ${manifestResponse.status}`);
         }
 
         const manifest = await manifestResponse.json();
         if (!Array.isArray(manifest)) {
-            throw new Error(`Invalid scene manifest for ${sceneRoot}`);
+            throw new Error(`Invalid scene manifest for ${xmlDirectory}`);
         }
 
-        const requests = manifest.map((relativePath) => fetch(`${SCENE_BASE_URL}/${sceneRoot}/${relativePath}`));
+        const requests = manifest.map((relativePath) => fetch(`${SCENE_BASE_URL}/${xmlDirectory}/${relativePath}`));
         const responses = await Promise.all(requests);
 
         for (let i = 0; i < responses.length; i++) {
             const response = responses[i];
             if (!response.ok) {
-                throw new Error(`Failed to fetch scene asset ${sceneRoot}/${manifest[i]}: ${response.status}`);
+                throw new Error(`Failed to fetch scene asset ${xmlDirectory}/${manifest[i]}: ${response.status}`);
             }
 
             const relativePath = manifest[i];
-            const assetPath = `${sceneRoot}/${relativePath}`;
+            const assetPath = `${xmlDirectory}/${relativePath}`;
             const segments = assetPath.split('/');
             ensureWorkingDirectories(mujoco, segments.slice(0, -1));
 
@@ -370,11 +375,11 @@ export async function downloadExampleScenesFolder(mujoco, scenePath) {
         }
     })();
 
-    sceneDownloadPromises.set(sceneRoot, downloadPromise);
+    sceneDownloadPromises.set(xmlDirectory, downloadPromise);
     try {
         await downloadPromise;
     } catch (error) {
-        sceneDownloadPromises.delete(sceneRoot);
+        sceneDownloadPromises.delete(xmlDirectory);
         throw error;
     }
 }

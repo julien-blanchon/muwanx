@@ -15,18 +15,6 @@
   "assets/thigh_1.obj",
   "assets/thigh_mirror_0.obj",
   "assets/thigh_mirror_1.obj",
-  "go2.png",
   "go2.xml",
-  "go2_mjx.png",
-  "go2_mjx.xml",
-  "go2_test.xml",
-  "meshes/base.stl",
-  "meshes/calf.stl",
-  "meshes/calf_mirror.stl",
-  "meshes/foot.stl",
-  "meshes/hip.stl",
-  "meshes/thigh.stl",
-  "meshes/thigh_mirror.stl",
-  "scene.xml",
-  "scene_mjx.xml"
+  "scene.xml"
 ]
