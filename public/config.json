@@ -7,9 +7,9 @@
       "asset_meta": "./examples/checkpoints/go2/asset_meta.json",
       "default_policy": "facet",
       "policies": [
-        { "id": "facet", "name": "Facet", "path": "./examples/checkpoints/policy-05-03_21-31.json", "ui_controls": ["setpoint", "stiffness"] },
-        { "id": "robust", "name": "Robust", "path": "./examples/checkpoints/robust.json", "ui_controls": [] },
-        { "id": "vanilla", "name": "Vanilla", "path": "./examples/checkpoints/vanilla.json", "ui_controls": [] }
+        { "id": "facet", "name": "Facet", "path": "./examples/checkpoints/go2/policy-05-03_21-31.json", "ui_controls": ["setpoint", "stiffness"] },
+        { "id": "robust", "name": "Robust", "path": "./examples/checkpoints/go2/robust.json", "ui_controls": [] },
+        { "id": "vanilla", "name": "Vanilla", "path": "./examples/checkpoints/go2/vanilla.json", "ui_controls": [] }
       ]
     },
     {

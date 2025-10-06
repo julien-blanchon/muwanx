@@ -53,7 +53,7 @@
                 ]
             ]
         },
-        "path": "./examples/checkpoints/vanilla.onnx"
+        "path": "./examples/checkpoints/go2/vanilla.onnx"
     },
     "obs_config": {
         "policy": [

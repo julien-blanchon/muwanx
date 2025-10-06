@@ -54,7 +54,7 @@
                 ]
             ]
         },
-        "path": "./examples/checkpoints/policy-05-03_21-31.onnx"
+        "path": "./examples/checkpoints/go2/policy-05-03_21-31.onnx"
     },
     "obs_config": {
         "policy": [

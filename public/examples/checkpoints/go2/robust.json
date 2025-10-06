@@ -53,7 +53,7 @@
                 ]
             ]
         },
-        "path": "./examples/checkpoints/robust.onnx"
+        "path": "./examples/checkpoints/go2/robust.onnx"
     },
     "obs_config": {
         "policy": [
