@@ -47,9 +47,7 @@ npm run dev
 
 Open your browser and navigate to the localhost URL shown in the terminal to see muwanx in action.
 
-<div align="center" style="filter: drop-shadow(0 2px 8px rgba(0,0,0,0.25));">
-  <img src="public/muwanx_demo.gif" alt="muwanx demo" style="max-width: 90%; max-height: 300px; border-radius: 8px;">
-</div>
+<img src="public/muwanx_demo.gif" alt="muwanx demo" width="70%">
 
 
 ## Acknowledgments

@@ -415,7 +415,7 @@ export default {
 
             try {
                 const { scenePath, metaPath } = this.resolveSceneConfig(selectedTask, defaultPolicy);
-                await this.withTransition('Reloading default policy...', async () => {
+                await this.withTransition('Switching model...', async () => {
                     await this.ensureActionManager(metaPath);
                     await this.runtime.loadEnvironment({
                         scenePath,
