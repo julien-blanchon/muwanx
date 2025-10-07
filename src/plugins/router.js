@@ -7,11 +7,13 @@ const routes = [
         path: '/',
         name: 'Demo',
         component: Demo,
+        props: () => ({ configPath: './config.json' })
     },
     {
-        path: '/myosuite',
-        name: 'MyoSuite',
+        path: '/mujoco_menagerie',
+        name: 'MujocoMenagerie',
         component: Demo,
+        props: () => ({ configPath: './config_mujoco_menagerie.json' })
     },
 ]
 

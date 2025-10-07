@@ -208,6 +208,12 @@ import { markRaw, nextTick } from 'vue';
 
 export default {
     name: 'DemoPage',
+    props: {
+        configPath: {
+            type: String,
+            default: './config.json'
+        }
+    },
     data: () => ({
         config: { tasks: [] },
         task: null,
@@ -348,7 +354,7 @@ export default {
         },
         async loadConfig() {
             try {
-                const response = await fetch('./config.json');
+                const response = await fetch(this.configPath);
                 this.config = await response.json();
                 const firstTask = this.config.tasks[0];
                 this.task = firstTask?.id ?? null;

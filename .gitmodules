@@ -1,3 +1,0 @@
-[submodule "public/examples/scenes/mujoco_menagerie"]
-	path = public/examples/scenes/mujoco_menagerie
-	url = https://github.com/google-deepmind/mujoco_menagerie.git
