@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { Reflector } from '../../examples/utils/Reflector.js';
-import { mujocoAssetAnalyzer } from '../../utils/mujocoAssetAnalyzer.js';
+import { mujocoAssetCollector } from '../../utils/mujocoAssetCollector.js';
 
 const SCENE_BASE_URL = './examples/scenes';
 const BINARY_EXTENSIONS = ['.png', '.stl', '.skn', '.mjb'];
@@ -347,7 +347,7 @@ export async function downloadExampleScenesFolder(mujoco, scenePath) {
         // Use the dynamic asset analyzer instead of index.json
         let manifest;
         try {
-            manifest = await mujocoAssetAnalyzer.analyzeScene(scenePath, SCENE_BASE_URL);
+            manifest = await mujocoAssetCollector.analyzeScene(scenePath, SCENE_BASE_URL);
             
             if (!Array.isArray(manifest)) {
                 throw new Error(`Asset analyzer returned invalid result (not an array): ${typeof manifest}`);

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { mujocoAssetAnalyzer } from '../src/mujoco_wasm/utils/mujocoAssetAnalyzer.js';
+import { mujocoAssetCollector } from '../src/mujoco_wasm/utils/mujocoAssetCollector.js';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -158,7 +158,7 @@ async function testAssetAnalyzer() {
             // Use absolute path for the base path to be reliable regardless of working directory  
             const basePath = path.join(projectRoot, 'examples', 'scenes');
             
-            const jsAssets = await mujocoAssetAnalyzer.analyzeScene(testCase.xmlPath, basePath);
+            const jsAssets = await mujocoAssetCollector.analyzeScene(testCase.xmlPath, basePath);
             const expectedAssetsForTest = testCase.expectedFiles.sort();
             
             console.log(`✨ JavaScript found: ${jsAssets.length} assets`);

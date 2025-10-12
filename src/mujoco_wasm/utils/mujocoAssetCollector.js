@@ -5,11 +5,11 @@
  * (meshes, textures, includes, etc.) similar to the Python generate_index.py script.
  * 
  * Usage:
- *   const analyzer = new MuJoCoAssetAnalyzer();
+ *   const analyzer = new MuJoCoAssetCollector();
  *   const assets = await analyzer.analyzeScene('./examples/scenes/unitree_go2/scene.xml');
  */
 
-export class MuJoCoAssetAnalyzer {
+export class MuJoCoAssetCollector {
     constructor(options = {}) {
         // Attributes that may reference external resources
         this.REFERENCE_ATTRS = new Set(['file', 'href', 'src']);
@@ -103,12 +103,12 @@ export class MuJoCoAssetAnalyzer {
             try {
                 const response = await fetch(fullFilePath);
                 if (!response.ok) {
-                    console.warn(`[MuJoCoAssetAnalyzer] Failed to fetch ${fullFilePath}: ${response.status}`);
+                    console.warn(`[MuJoCoAssetCollector] Failed to fetch ${fullFilePath}: ${response.status}`);
                     return;
                 }
                 xmlContent = await response.text();
             } catch (error) {
-                console.error(`[MuJoCoAssetAnalyzer] Error fetching ${filePath}:`, error);
+                console.error(`[MuJoCoAssetCollector] Error fetching ${filePath}:`, error);
                 return;
             }
 
@@ -126,7 +126,7 @@ export class MuJoCoAssetAnalyzer {
                     throw new Error(parseError.textContent);
                 }
             } catch (error) {
-                console.warn(`[MuJoCoAssetAnalyzer] Failed to parse XML ${filePath}:`, error.message);
+                console.warn(`[MuJoCoAssetCollector] Failed to parse XML ${filePath}:`, error.message);
                 return;
             }
 
@@ -170,7 +170,7 @@ export class MuJoCoAssetAnalyzer {
         try {
             await walk(rootPath);
         } catch (error) {
-            console.error(`[MuJoCoAssetAnalyzer] Error during asset collection for ${rootPath}:`, error);
+            console.error(`[MuJoCoAssetCollector] Error during asset collection for ${rootPath}:`, error);
             throw error;
         }
         
@@ -178,11 +178,11 @@ export class MuJoCoAssetAnalyzer {
         
         // Validate result
         if (!Array.isArray(result)) {
-            console.error('[MuJoCoAssetAnalyzer] Internal error: result is not an array');
+            console.error('[MuJoCoAssetCollector] Internal error: result is not an array');
             return [];
         }
         
-        console.log(`[MuJoCoAssetAnalyzer] Successfully analyzed ${rootPath}: found ${result.length} assets`);
+        console.log(`[MuJoCoAssetCollector] Successfully analyzed ${rootPath}: found ${result.length} assets`);
         return result;
     }
 
@@ -360,7 +360,7 @@ export class MuJoCoAssetAnalyzer {
         if (!value.trim()) return null;
 
         if (this.debug) {
-            console.log(`[MuJoCoAssetAnalyzer] _resolveLocalFile: value="${value}", baseDir="${baseDir}", searchDirs=[${searchDirs.join(', ')}]`);
+            console.log(`[MuJoCoAssetCollector] _resolveLocalFile: value="${value}", baseDir="${baseDir}", searchDirs=[${searchDirs.join(', ')}]`);
         }
 
         // Handle absolute paths first
@@ -379,29 +379,29 @@ export class MuJoCoAssetAnalyzer {
             const fullUrl = `${baseUrl}/${candidate}`;
             
             if (this.debug) {
-                console.log(`[MuJoCoAssetAnalyzer] Trying: ${fullUrl}`);
+                console.log(`[MuJoCoAssetCollector] Trying: ${fullUrl}`);
             }
             
             try {
                 const response = await fetch(fullUrl, { method: 'HEAD' });
                 if (response.ok) {
                     if (this.debug) {
-                        console.log(`[MuJoCoAssetAnalyzer] Found: ${candidate}`);
+                        console.log(`[MuJoCoAssetCollector] Found: ${candidate}`);
                     }
                     return candidate;
                 }
                 if (this.debug) {
-                    console.log(`[MuJoCoAssetAnalyzer] Not found (${response.status}): ${fullUrl}`);
+                    console.log(`[MuJoCoAssetCollector] Not found (${response.status}): ${fullUrl}`);
                 }
             } catch (error) {
                 if (this.debug) {
-                    console.log(`[MuJoCoAssetAnalyzer] Error accessing: ${fullUrl} - ${error.message}`);
+                    console.log(`[MuJoCoAssetCollector] Error accessing: ${fullUrl} - ${error.message}`);
                 }
             }
         }
 
         if (this.debug) {
-            console.log(`[MuJoCoAssetAnalyzer] Could not resolve: ${value}`);
+            console.log(`[MuJoCoAssetCollector] Could not resolve: ${value}`);
         }
         return null;
     }
@@ -421,7 +421,7 @@ export class MuJoCoAssetAnalyzer {
 
         // Handle file:// URLs
         if (lower.startsWith('file://')) {
-            console.warn(`[MuJoCoAssetAnalyzer] file:// URLs not supported in browser: ${value}`);
+            console.warn(`[MuJoCoAssetCollector] file:// URLs not supported in browser: ${value}`);
             return null;
         }
 
@@ -429,7 +429,7 @@ export class MuJoCoAssetAnalyzer {
         if (value.includes('@') && !value.startsWith('@')) {
             const [prefix, member] = value.split('@', 2);
             if (!member) {
-                console.warn(`[MuJoCoAssetAnalyzer] Invalid archive reference: ${value}`);
+                console.warn(`[MuJoCoAssetCollector] Invalid archive reference: ${value}`);
                 return null;
             }
             
@@ -506,4 +506,4 @@ export class MuJoCoAssetAnalyzer {
 }
 
 // Export a singleton instance for convenience
-export const mujocoAssetAnalyzer = new MuJoCoAssetAnalyzer();
+export const mujocoAssetCollector = new MuJoCoAssetCollector();

@@ -3,7 +3,7 @@ import { Reflector } from './utils/Reflector.js';
 import { MuJoCoDemo } from './main.js';
 import { Observations } from './observationHelpers.js';
 import { ONNXModule } from './onnxHelper.js';
-import { mujocoAssetAnalyzer } from '../utils/mujocoAssetAnalyzer.js';
+import { mujocoAssetCollector } from '../utils/mujocoAssetCollector.js';
 
 export async function reloadScene(mjcf_path, meta_path) {
   // Delete the old scene and load the new scene
@@ -786,7 +786,7 @@ export async function downloadExampleScenesFolder(mujoco, scenePath) {
     // Use the dynamic asset analyzer instead of index.json
     let manifest;
     try {
-      manifest = await mujocoAssetAnalyzer.analyzeScene(scenePath, SCENE_BASE_URL);
+      manifest = await mujocoAssetCollector.analyzeScene(scenePath, SCENE_BASE_URL);
       
       // Validate the manifest
       if (!Array.isArray(manifest)) {
