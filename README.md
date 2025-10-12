@@ -20,9 +20,11 @@
 Perfect for sharing interactive demos as static sites (such as GitHub Pages), rapidly prototyping RL policies, or building customizable environments for experimentation and visualization.
 
 
-### 🚀 [Visit the Live Demo](https://ttktjmt.github.io/muwanx/)
+## 🚀 [Visit the Live Demo](https://ttktjmt.github.io/muwanx/)
 
 **╰▶ [Live Demo with MyoSuite](https://ttktjmt.github.io/muwanx/#/myosuite)** &nbsp;&nbsp;© [MyoSuite](https://github.com/MyoHub/myosuite)
+
+**╰▶ [Live Demo with MuJoCo Menagerie](https://ttktjmt.github.io/muwanx/#/mujoco_menagerie)** &nbsp;&nbsp;© [Google DeepMind](https://github.com/google-deepmind/mujoco_menagerie)
 
 
 ## Features
