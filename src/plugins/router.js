@@ -15,6 +15,12 @@ const routes = [
         component: Demo,
         props: () => ({ configPath: './config_mujoco_menagerie.json' })
     },
+    {
+        path: '/myosuite',
+        name: 'MyoSuite',
+        component: Demo,
+        props: () => ({ configPath: './config_myosuite.json' })
+    },
 ]
 
 const router = createRouter({

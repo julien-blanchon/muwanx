@@ -1,0 +1,12 @@
+{
+  "tasks": [
+    {
+      "id": "1",
+      "name": "Finger",
+      "model_xml": "myosuite/myosuite/simhive/myo_sim/finger/finger_v0.xml",
+      "asset_meta": null,
+      "default_policy": null,
+      "policies": []
+    }
+  ]
+}

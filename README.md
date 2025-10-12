@@ -19,7 +19,11 @@
 **Muwanx** is a browser-based mujoco playground powered by [mujoco_wasm](https://github.com/zalo/mujoco_wasm) and [ONNX Runtime](https://github.com/microsoft/onnxruntime). It enables MuJoCo simulations with real-time trained policy control, running entirely in your browser - no server for simulation required.  
 Perfect for sharing interactive demos as static sites (such as GitHub Pages), rapidly prototyping RL policies, or building customizable environments for experimentation and visualization.
 
+
 ### 🚀 [Visit the Live Demo](https://ttktjmt.github.io/muwanx/)
+
+**╰▶ [Live Demo with MyoSuite](https://ttktjmt.github.io/muwanx/#/myosuite)** &nbsp;&nbsp;© [MyoSuite](https://github.com/MyoHub/myosuite)
+
 
 ## Features
 - **Real-time**: Run MuJoCo simulations with real-time policy control.
@@ -28,6 +32,7 @@ Perfect for sharing interactive demos as static sites (such as GitHub Pages), ra
 - **Client-only**: All computation runs in the browser. No server for simulation is required.
 - **Easy Sharing**: Host as a static site for effortless demo distribution (e.g., GitHub Pages).
 - **Customizable**: Add your own MuJoCo models and ONNX policies quickly.
+
 
 ## Quick Start
 
@@ -53,6 +58,7 @@ Open your browser and navigate to the localhost URL shown in the terminal to see
 ## Acknowledgments
 
 This project has greatly benefited from the contributions of the [Facet](https://github.com/Facet-Team/facet) project by the research group at Tsinghua University.
+
 
 ## License
 

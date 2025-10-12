@@ -1,0 +1,3 @@
+[submodule "public/examples/scenes/myosuite"]
+	path = public/examples/scenes/myosuite
+	url = https://github.com/myohub/myosuite.git
