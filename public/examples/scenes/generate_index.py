@@ -342,7 +342,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             print(f"[warn] Model XML not found for '{name}': {exc}", file=sys.stderr)
             continue
 
-        output_path = xml_path.parent / "files.json"
+        output_path = xml_path.parent / "index.json"
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text(json.dumps(dependencies, indent=args.indent), encoding="utf-8")
 

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { Reflector } from '../../examples/utils/Reflector.js';
+import { mujocoAssetAnalyzer } from '../../utils/mujocoAssetAnalyzer.js';
 
 const SCENE_BASE_URL = './examples/scenes';
 const BINARY_EXTENSIONS = ['.png', '.stl', '.skn', '.mjb'];
@@ -32,6 +33,7 @@ export async function loadSceneFromURL(mujoco, filename, parent) {
   }
 
   parent.model = mujoco.Model.load_from_xml(`/working/${filename}`);
+  
   parent.state = new mujoco.State(parent.model);
   parent.simulation = new mujoco.Simulation(parent.model, parent.state);
 
@@ -342,35 +344,81 @@ export async function downloadExampleScenesFolder(mujoco, scenePath) {
     }
 
     const downloadPromise = (async () => {
-        const manifestResponse = await fetch(`${SCENE_BASE_URL}/${xmlDirectory}/files.json`);
-        if (!manifestResponse.ok) {
-            throw new Error(`Failed to load scene manifest for ${xmlDirectory}: ${manifestResponse.status}`);
+        // Use the dynamic asset analyzer instead of index.json
+        let manifest;
+        try {
+            manifest = await mujocoAssetAnalyzer.analyzeScene(scenePath, SCENE_BASE_URL);
+            
+            if (!Array.isArray(manifest)) {
+                throw new Error(`Asset analyzer returned invalid result (not an array): ${typeof manifest}`);
+            }
+            
+            if (manifest.length === 0) {
+                throw new Error('No assets found by analyzer');
+            }
+            
+        } catch (error) {
+            
+            // Fallback to index.json if asset analyzer fails
+            try {
+                const manifestResponse = await fetch(`${SCENE_BASE_URL}/${xmlDirectory}/index.json`);
+                if (!manifestResponse.ok) {
+                    throw new Error(`Failed to load scene manifest for ${xmlDirectory}: ${manifestResponse.status}`);
+                }
+                manifest = await manifestResponse.json();
+                if (!Array.isArray(manifest)) {
+                    throw new Error(`Invalid scene manifest for ${xmlDirectory}`);
+                }
+            } catch (fallbackError) {
+                throw new Error(`Both asset analysis and index.json fallback failed: ${fallbackError.message}`);
+            }
         }
 
-        const manifest = await manifestResponse.json();
-        if (!Array.isArray(manifest)) {
-            throw new Error(`Invalid scene manifest for ${xmlDirectory}`);
-        }
+        // Filter out external URLs and process only local assets
+        const localAssets = manifest.filter(asset => 
+            typeof asset === 'string' && 
+            !asset.startsWith('http://') && 
+            !asset.startsWith('https://')
+        );
 
-        const requests = manifest.map((relativePath) => fetch(`${SCENE_BASE_URL}/${xmlDirectory}/${relativePath}`));
+        const requests = localAssets.map(relativePath => {
+            const fullPath = relativePath.startsWith(xmlDirectory) 
+                ? `${SCENE_BASE_URL}/${relativePath}`
+                : `${SCENE_BASE_URL}/${xmlDirectory}/${relativePath}`;
+            return fetch(fullPath);
+        });
+        
         const responses = await Promise.all(requests);
 
         for (let i = 0; i < responses.length; i++) {
             const response = responses[i];
+            const relativePath = localAssets[i];
+            
             if (!response.ok) {
-                throw new Error(`Failed to fetch scene asset ${xmlDirectory}/${manifest[i]}: ${response.status}`);
+                console.warn(`[downloadExampleScenesFolder] Failed to fetch scene asset ${relativePath}: ${response.status}`);
+                continue; // Skip missing assets but don't fail the whole download
             }
 
-            const relativePath = manifest[i];
-            const assetPath = `${xmlDirectory}/${relativePath}`;
+            // Determine the correct asset path
+            const assetPath = relativePath.startsWith(xmlDirectory) 
+                ? relativePath
+                : `${xmlDirectory}/${relativePath}`;
+            
+                
             const segments = assetPath.split('/');
             ensureWorkingDirectories(mujoco, segments.slice(0, -1));
 
             const targetPath = `/working/${assetPath}`;
-            if (isBinaryAsset(relativePath)) {
-                mujoco.FS.writeFile(targetPath, new Uint8Array(await response.arrayBuffer()));
-            } else {
-                mujoco.FS.writeFile(targetPath, await response.text());
+            try {
+                if (isBinaryAsset(relativePath)) {
+                    const arrayBuffer = await response.arrayBuffer();
+                    mujoco.FS.writeFile(targetPath, new Uint8Array(arrayBuffer));
+                } else {
+                    const textContent = await response.text();
+                    mujoco.FS.writeFile(targetPath, textContent);
+                }
+            } catch (error) {
+                console.warn(`[downloadExampleScenesFolder] Failed to write asset ${targetPath}:`, error.message);
             }
         }
     })();
