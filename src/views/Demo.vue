@@ -228,7 +228,7 @@
                 <div class="shortcut-section">
                     <div class="shortcut-item">
                         <div class="shortcut-key">
-                            <kbd>I</kbd>
+                            <kbd @click="toggleUIVisibility" class="clickable-key">I</kbd>
                         </div>
                         <div class="shortcut-description">
                             Toggle Interactive Mode (Hide/Show UI)
@@ -236,7 +236,7 @@
                     </div>
                     <div class="shortcut-item">
                         <div class="shortcut-key">
-                            <kbd>H</kbd>
+                            <kbd @click="showHelpDialog = false" class="clickable-key">H</kbd>
                         </div>
                         <div class="shortcut-description">
                             Toggle this help dialog
@@ -244,7 +244,7 @@
                     </div>
                     <div class="shortcut-item">
                         <div class="shortcut-key">
-                            <kbd>Backspace</kbd>
+                            <kbd @click="reset" class="clickable-key">Backspace</kbd>
                         </div>
                         <div class="shortcut-description">
                             Reset simulation
@@ -930,6 +930,24 @@ export default {
     border-radius: 4px;
     box-shadow: 0 2px 0 #999, 0 3px 2px rgba(0,0,0,0.2);
     text-shadow: 0 1px 0 #fff;
+}
+
+.shortcut-key kbd.clickable-key {
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+}
+
+.shortcut-key kbd.clickable-key:hover {
+    background: linear-gradient(180deg, #e8e8e8 0%, #d0d0d0 100%);
+    transform: translateY(1px);
+    box-shadow: 0 1px 0 #999, 0 2px 1px rgba(0,0,0,0.2);
+}
+
+.shortcut-key kbd.clickable-key:active {
+    background: linear-gradient(180deg, #d0d0d0 0%, #c0c0c0 100%);
+    transform: translateY(2px);
+    box-shadow: 0 0 0 #999, 0 1px 1px rgba(0,0,0,0.2);
 }
 
 .shortcut-description {
