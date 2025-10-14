@@ -529,9 +529,58 @@ export class MujocoRuntime {
     }
 
     dispose() {
+        // Stop the simulation loop first
+        this.stop();
+        
+        // Clear policy and ONNX session
+        if (this.policy && this.policy.session) {
+            try {
+                this.policy.session.release();
+            } catch (e) {
+                console.warn('Failed to release ONNX session:', e);
+            }
+        }
+        this.policy = null;
+        this.inputDict = null;
+        
+        // Free WebAssembly objects in correct order
+        if (this.simulation) {
+            try {
+                this.simulation.free();
+            } catch (e) {
+                console.warn('Failed to free simulation:', e);
+            }
+            this.simulation = null;
+        }
+        if (this.state) {
+            try {
+                this.state.free();
+            } catch (e) {
+                console.warn('Failed to free state:', e);
+            }
+            this.state = null;
+        }
+        if (this.model) {
+            try {
+                this.model.free();
+            } catch (e) {
+                console.warn('Failed to free model:', e);
+            }
+            this.model = null;
+        }
+        
+        // Dispose Three.js scene objects
+        this.disposeThreeJSResources();
+        
+        // Remove event listeners and dispose renderer
         window.removeEventListener('resize', this.onWindowResize);
+        if (this.controls) {
+            this.controls.dispose();
+        }
         this.renderer.setAnimationLoop(null);
         this.renderer.dispose();
+        
+        // Dispose managers
         if (this.commandManager && typeof this.commandManager.dispose === 'function') {
             this.commandManager.dispose();
         }
@@ -542,6 +591,53 @@ export class MujocoRuntime {
             if (typeof manager.dispose === 'function') {
                 manager.dispose();
             }
+        }
+        
+        // Clear references
+        this.bodies = null;
+        this.lights = null;
+        this.mujocoRoot = null;
+        this.lastSimState = null;
+        this.services.clear();
+    }
+    
+    disposeThreeJSResources() {
+        if (this.scene) {
+            // Recursively dispose all objects in the scene
+            this.scene.traverse((object) => {
+                if (object.geometry) {
+                    object.geometry.dispose();
+                }
+                if (object.material) {
+                    if (Array.isArray(object.material)) {
+                        object.material.forEach(material => {
+                            this.disposeMaterial(material);
+                        });
+                    } else {
+                        this.disposeMaterial(object.material);
+                    }
+                }
+            });
+            
+            // Clear the scene
+            while (this.scene.children.length > 0) {
+                this.scene.remove(this.scene.children[0]);
+            }
+        }
+    }
+    
+    disposeMaterial(material) {
+        if (material) {
+            // Dispose textures
+            Object.keys(material).forEach(prop => {
+                const value = material[prop];
+                if (value && typeof value === 'object' && value.isTexture) {
+                    value.dispose();
+                }
+            });
+            
+            // Dispose the material itself
+            material.dispose();
         }
     }
 }

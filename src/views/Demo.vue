@@ -598,6 +598,16 @@ export default {
         document.addEventListener('keydown', this.keydown_listener);
     },
     beforeUnmount() {
+        // Properly dispose of the runtime before component unmount
+        if (this.runtime) {
+            try {
+                this.runtime.dispose();
+            } catch (e) {
+                console.warn('Error disposing runtime:', e);
+            }
+            this.runtime = null;
+        }
+        
         window.removeEventListener('resize', this.handleResize);
         if (this.keydown_listener) {
             document.removeEventListener('keydown', this.keydown_listener);
