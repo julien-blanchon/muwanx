@@ -152,7 +152,7 @@
         </v-card>
     </div>
 
-    <!-- Loading dialog - mobile responsive -->
+    <!-- Loading dialog -->
     <v-dialog :model-value="state === 0" persistent :max-width="isMobile ? '90vw' : '600px'"
         :fullscreen="isMobile && isSmallScreen" scrollable>
         <v-card :title="!isMobile ? 'Loading Simulation Environment' : undefined">
@@ -171,7 +171,7 @@
         </v-card>
     </v-dialog>
 
-    <!-- Error dialog - mobile responsive -->
+    <!-- Error dialog -->
     <v-dialog :model-value="state < 0" persistent :max-width="isMobile ? '90vw' : '600px'"
         :fullscreen="isMobile && isSmallScreen" scrollable>
         <v-card :title="isMobile ? 'Error' : 'Simulation Environment Loading Error'">
@@ -190,7 +190,7 @@
         </v-card>
     </v-dialog>
 
-    <!-- Notice - mobile responsive -->
+    <!-- Notice -->
     <div class="notice-container">
         <div class="notice-content">
             Powered by
@@ -199,6 +199,61 @@
             </a>
         </div>
     </div>
+
+    <!-- Help Button -->
+    <div class="help-button-container">
+        <v-btn 
+            @click="showHelpDialog = true" 
+            icon 
+            size="small" 
+            variant="text"
+            class="help-btn"
+            title="Keyboard Shortcuts (H)"
+        >
+            <v-icon color="white">mdi-help</v-icon>
+        </v-btn>
+    </div>
+
+    <!-- Help Dialog -->
+    <v-dialog v-model="showHelpDialog" :max-width="isMobile ? '90vw' : '500px'" scrollable>
+        <v-card>
+            <v-card-title class="d-flex justify-space-between align-center">
+                <span>Keyboard Shortcuts</span>
+                <v-btn icon size="small" @click="showHelpDialog = false">
+                    <v-icon>mdi-close</v-icon>
+                </v-btn>
+            </v-card-title>
+            <v-divider></v-divider>
+            <v-card-text class="help-content">
+                <div class="shortcut-section">
+                    <div class="shortcut-item">
+                        <div class="shortcut-key">
+                            <kbd>I</kbd>
+                        </div>
+                        <div class="shortcut-description">
+                            Toggle Interactive Mode (Hide/Show UI)
+                        </div>
+                    </div>
+                    <div class="shortcut-item">
+                        <div class="shortcut-key">
+                            <kbd>H</kbd>
+                        </div>
+                        <div class="shortcut-description">
+                            Toggle this help dialog
+                        </div>
+                    </div>
+                    <div class="shortcut-item">
+                        <div class="shortcut-key">
+                            <kbd>Backspace</kbd>
+                        </div>
+                        <div class="shortcut-description">
+                            Reset simulation
+                        </div>
+                    </div>
+                </div>
+            </v-card-text>
+        </v-card>
+    </v-dialog>
 </template>
 
 <script>
@@ -236,6 +291,10 @@ export default {
         isPanelCollapsed: false,
         isTransitioning: false,
         transitionMessage: '',
+        // Interactive mode (hide UI)
+        uiHidden: false,
+        // Help dialog
+        showHelpDialog: false,
     }),
     methods: {
         resolveDefaultPolicy(task) {
@@ -311,6 +370,15 @@ export default {
         },
         togglePanel() {
             this.isPanelCollapsed = !this.isPanelCollapsed;
+        },
+        toggleUIVisibility() {
+            this.uiHidden = !this.uiHidden;
+            // Toggle body class for global CSS targeting
+            if (this.uiHidden) {
+                document.body.classList.add('interactive-mode');
+            } else {
+                document.body.classList.remove('interactive-mode');
+            }
         },
         async init() {
             if (typeof WebAssembly !== "object" || typeof WebAssembly.instantiate !== "function") {
@@ -518,6 +586,14 @@ export default {
             if (event.code === 'Backspace') {
                 this.reset();
             }
+            // Toggle interactive mode (hide/show UI) with 'I' key
+            if (event.code === 'KeyI') {
+                this.toggleUIVisibility();
+            }
+            // Toggle help dialog with 'H' key
+            if (event.code === 'KeyH') {
+                this.showHelpDialog = !this.showHelpDialog;
+            }
         };
         document.addEventListener('keydown', this.keydown_listener);
     },
@@ -526,6 +602,8 @@ export default {
         if (this.keydown_listener) {
             document.removeEventListener('keydown', this.keydown_listener);
         }
+        // Clean up interactive mode class
+        document.body.classList.remove('interactive-mode');
     },
 };
 </script>
@@ -794,15 +872,73 @@ export default {
     text-decoration: underline;
 }
 
-.fade-enter-active,
-.fade-leave-active {
-    transition: opacity 0.2s ease;
+/* Help Button Styles */
+.help-button-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1001;
 }
 
-.fade-enter-from,
-.fade-leave-to {
-    opacity: 0;
+.help-btn {
+    background: transparent !important;
+    transition: opacity 0.2s ease;
+    opacity: 0.7;
 }
+
+.help-btn:hover {
+    opacity: 1;
+}
+
+@media (max-width: 768px) {
+    .help-button-container {
+        bottom: 90px; /* Above mobile control panel */
+        right: 16px;
+    }
+}
+
+/* Help Dialog Content Styles */
+.help-content {
+    padding: 20px !important;
+}
+
+.shortcut-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.shortcut-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.shortcut-key {
+    min-width: 120px;
+}
+
+.shortcut-key kbd {
+    display: inline-block;
+    padding: 6px 12px;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    background: linear-gradient(180deg, #f5f5f5 0%, #e0e0e0 100%);
+    border: 1px solid #bbb;
+    border-radius: 4px;
+    box-shadow: 0 2px 0 #999, 0 3px 2px rgba(0,0,0,0.2);
+    text-shadow: 0 1px 0 #fff;
+}
+
+.shortcut-description {
+    flex: 1;
+    font-size: 14px;
+    color: rgba(0, 0, 0, 0.87);
+}
+
+.fade-enter-active,
 
 .transition-overlay {
     position: fixed;
@@ -821,5 +957,24 @@ export default {
     color: #fff;
     font-size: 1rem;
     letter-spacing: 0.02em;
+}
+</style>
+
+<style>
+/* Global styles for interactive mode - hides UI elements when body has 'interactive-mode' class */
+body.interactive-mode .control-panel,
+body.interactive-mode .transition-overlay {
+    display: none !important;
+}
+
+/* Hide loading and error dialogs in interactive mode, but allow help dialog */
+body.interactive-mode .v-dialog:not(:has(.help-content)) {
+    display: none !important;
+}
+
+/* Keep notice and help button visible in interactive mode */
+body.interactive-mode .notice-container,
+body.interactive-mode .help-button-container {
+    display: block !important;
 }
 </style>

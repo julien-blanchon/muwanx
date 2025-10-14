@@ -16,7 +16,7 @@
 
 ---
 
-**Muwanx** is a browser-based mujoco playground powered by [mujoco_wasm](https://github.com/zalo/mujoco_wasm) and [ONNX Runtime](https://github.com/microsoft/onnxruntime). It enables MuJoCo simulations with real-time trained policy control, running entirely in your browser - no server for simulation required.  
+**Muwanx** is a browser-based mujoco playground powered by [mujoco_wasm](https://github.com/zalo/mujoco_wasm) and [ONNX Runtime](https://github.com/microsoft/onnxruntime). It enables MuJoCo simulations with real-time trained policy control, running entirely in the browser - no server for simulation required.  
 Perfect for sharing interactive demos as static sites (such as GitHub Pages), rapidly prototyping RL policies, or building customizable environments for experimentation and visualization.
 
 
