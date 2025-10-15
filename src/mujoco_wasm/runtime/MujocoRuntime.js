@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from '../node_modules/three/examples/jsm/controls/OrbitControls.js';
 import { downloadExampleScenesFolder, getPosition, getQuaternion, loadSceneFromURL } from './utils/mujocoScene.js';
 import { ONNXModule } from '../examples/onnxHelper.js';
+import { TrajectoryActionManager } from './managers/actions/TrajectoryActionManager.js';
 
 const DEFAULT_CONTAINER_ID = 'mujoco-container';
 
@@ -98,6 +99,7 @@ export class MujocoRuntime {
         this.running = false;
         this.alive = false;
         this.actionContext = {};
+        this.assetMetadata = null;
 
         this.attachManagers();
     }
@@ -194,6 +196,7 @@ export class MujocoRuntime {
         this.mujoco_time = 0.0;
         this.simStepCount = 0;
         this.inferenceStepCount = 0;
+        this.assetMetadata = assetMeta;
 
         if (this.actionManager && typeof this.actionManager.onSceneLoaded === 'function') {
             await this.actionManager.onSceneLoaded({
@@ -286,7 +289,13 @@ export class MujocoRuntime {
             const loopStart = performance.now();
             const ready = !this.params.paused && this.model && this.state && this.simulation;
             if (ready) {
-                if (this.policy) {
+                if (this.actionManager instanceof TrajectoryActionManager) {
+                    const obsTensors = await this.collectObservations();
+                    const action = await this.actionManager.generateAction(obsTensors);
+                    this.applyAction(action);
+                    await this.executeSimulationSteps();
+                    this.updateCachedState();
+                } else if (this.policy) {
                     let time_start = performance.now();
                     const quat = this.simulation.qpos.subarray(3, 7);
                     this.quat.set(quat[1], quat[2], quat[3], quat[0]);
@@ -329,6 +338,24 @@ export class MujocoRuntime {
             await new Promise(resolve => setTimeout(resolve, sleepTime * 1000));
         }
         this.loopPromise = null;
+    }
+
+    applyAction(action) {
+        if (!this.simulation || !this.simulation.ctrl) {
+            return;
+        }
+        const ctrl = this.simulation.ctrl;
+        if (!action || typeof action.length !== 'number') {
+            ctrl.fill(0);
+            return;
+        }
+        const length = Math.min(action.length, ctrl.length);
+        for (let i = 0; i < length; i++) {
+            ctrl[i] = action[i];
+        }
+        for (let i = length; i < ctrl.length; i++) {
+            ctrl[i] = 0;
+        }
     }
 
     async executeSimulationSteps() {

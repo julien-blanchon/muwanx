@@ -13,6 +13,12 @@ export default {
 </script>
 
 <style>
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}
+
 body,
 .v-application {
   font-family: 'Google Sans', 'Noto Sans SC', Arial, sans-serif !important;

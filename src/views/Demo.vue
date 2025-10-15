@@ -81,6 +81,30 @@
                                     </div>
                                 </v-card-text>
 
+                                <v-card-text v-if="policy.ui_controls && policy.ui_controls.includes('trajectory_playback')"
+                                    :class="{ 'mobile-padding': isMobile }">
+                                    <div class="control-section-title">Trajectory Playback</div>
+
+                                    <v-btn-toggle v-model="trajectoryPlaybackState" mandatory class="mb-3">
+                                        <v-btn @click="playTrajectory" value="play"
+                                            :size="isMobile ? 'default' : 'small'" prepend-icon="mdi-play">
+                                            Play
+                                        </v-btn>
+                                        <v-btn @click="stopTrajectory" value="stop"
+                                            :size="isMobile ? 'default' : 'small'" prepend-icon="mdi-stop">
+                                            Stop
+                                        </v-btn>
+                                        <v-btn @click="resetTrajectory" value="reset"
+                                            :size="isMobile ? 'default' : 'small'" prepend-icon="mdi-refresh">
+                                            Reset
+                                        </v-btn>
+                                    </v-btn-toggle>
+
+                                    <v-checkbox v-model="trajectoryLoop" @update:modelValue="updateTrajectoryLoop"
+                                        label="Loop playback" :density="isMobile ? 'compact' : 'default'" hide-details>
+                                    </v-checkbox>
+                                </v-card-text>
+
                                 <!-- Stiffness Controls Group -->
                                 <v-divider
                                     v-if="policy.ui_controls && policy.ui_controls.includes('stiffness')"></v-divider>
@@ -257,7 +281,7 @@
 </template>
 
 <script>
-import { MujocoRuntime, GoCommandManager, IsaacActionManager, PassiveActionManager, ConfigObservationManager, LocomotionEnvManager } from '@/mujoco_wasm/examples/main.js';
+import { MujocoRuntime, GoCommandManager, IsaacActionManager, PassiveActionManager, TrajectoryActionManager, ConfigObservationManager, LocomotionEnvManager } from '@/mujoco_wasm/examples/main.js';
 import load_mujoco from '@/mujoco_wasm/dist/mujoco_wasm.js';
 import { markRaw, nextTick } from 'vue';
 
@@ -283,6 +307,7 @@ export default {
         runtime: null,
         commandManager: null,
         actionManager: null,
+    trajectoryManager: null,
         observationManager: null,
         envManager: null,
         // Mobile responsive data
@@ -295,6 +320,9 @@ export default {
         uiHidden: false,
         // Help dialog
         showHelpDialog: false,
+        // Trajectory playback controls
+        trajectoryPlaybackState: 'stop',
+        trajectoryLoop: false,
     }),
     computed: {
         helpButtonClasses() {
@@ -339,15 +367,51 @@ export default {
         hasAssetMeta(metaPath) {
             return Boolean(metaPath);
         },
-        async ensureActionManager(metaPath) {
+        async ensureActionManager(metaPath, policyConfig) {
             const needsIsaac = this.hasAssetMeta(metaPath);
+            const needsTrajectory = policyConfig?.type === 'trajectory';
             const currentManager = this.actionManager;
+
+            if (needsTrajectory) {
+                const trajectoryPath = policyConfig?.trajectory_path ?? null;
+                if (currentManager instanceof TrajectoryActionManager) {
+                    await this.loadTrajectoryData(currentManager, trajectoryPath);
+                    this.trajectoryManager = currentManager;
+                    currentManager.setLoop(this.trajectoryLoop);
+                    this.trajectoryPlaybackState = 'stop';
+                    return;
+                }
+
+                const nextManager = markRaw(new TrajectoryActionManager());
+                if (this.runtime) {
+                    if (this.runtime.actionManager && typeof this.runtime.actionManager.dispose === 'function') {
+                        this.runtime.actionManager.dispose();
+                    }
+                    this.runtime.actionManager = nextManager;
+                    nextManager.attachRuntime(this.runtime);
+                    if (typeof nextManager.onInit === 'function') {
+                        await nextManager.onInit();
+                    }
+                }
+                await this.loadTrajectoryData(nextManager, trajectoryPath);
+                nextManager.setLoop(this.trajectoryLoop);
+                this.actionManager = nextManager;
+                this.trajectoryManager = nextManager;
+                this.trajectoryPlaybackState = 'stop';
+                return;
+            }
+
+            this.trajectoryManager = null;
+            this.trajectoryPlaybackState = 'stop';
+            this.trajectoryLoop = false;
+
             if (needsIsaac && currentManager instanceof IsaacActionManager) {
                 return;
             }
             if (!needsIsaac && currentManager instanceof PassiveActionManager) {
                 return;
             }
+
             const nextManager = markRaw(needsIsaac ? new IsaacActionManager() : new PassiveActionManager());
             if (this.runtime) {
                 if (this.runtime.actionManager && typeof this.runtime.actionManager.dispose === 'function') {
@@ -360,6 +424,22 @@ export default {
                 }
             }
             this.actionManager = nextManager;
+        },
+        async loadTrajectoryData(manager, trajectoryPath) {
+            if (!manager || !trajectoryPath) {
+                return;
+            }
+            try {
+                const response = await fetch(trajectoryPath);
+                if (!response.ok) {
+                    console.warn(`Failed to load trajectory from ${trajectoryPath}: ${response.status}`);
+                    return;
+                }
+                const trajectoryData = await response.json();
+                manager.loadTrajectory(trajectoryData);
+            } catch (error) {
+                console.error('Error loading trajectory data:', error);
+            }
         },
         applyCommandState() {
             if (!this.commandManager) {
@@ -406,7 +486,7 @@ export default {
                 const initialPolicy = initialTask.policies.find(p => p.id === initialTask.default_policy) ?? initialTask.policies[0];
                 const { scenePath, metaPath } = this.resolveSceneConfig(initialTask, initialPolicy);
 
-                await this.ensureActionManager(metaPath);
+                await this.ensureActionManager(metaPath, initialPolicy);
                 this.commandManager = markRaw(new GoCommandManager());
                 this.observationManager = markRaw(new ConfigObservationManager());
                 this.envManager = markRaw(new LocomotionEnvManager());
@@ -454,7 +534,7 @@ export default {
             const selectedPolicy = selectedTask.policies.find(p => p.id === this.policy);
             const { scenePath, metaPath } = this.resolveSceneConfig(selectedTask, selectedPolicy);
             await this.withTransition('Switching scene...', async () => {
-                await this.ensureActionManager(metaPath);
+                await this.ensureActionManager(metaPath, selectedPolicy);
                 await this.runtime.loadEnvironment({
                     scenePath,
                     metaPath,
@@ -473,7 +553,7 @@ export default {
             if (!this.runtime) return;
             const { scenePath, metaPath } = this.resolveSceneConfig(selectedTask, selectedPolicy);
             await this.withTransition('Switching policy...', async () => {
-                await this.ensureActionManager(metaPath);
+                await this.ensureActionManager(metaPath, selectedPolicy);
                 await this.runtime.loadEnvironment({
                     scenePath,
                     metaPath,
@@ -496,7 +576,7 @@ export default {
             try {
                 const { scenePath, metaPath } = this.resolveSceneConfig(selectedTask, defaultPolicy);
                 await this.withTransition('Switching model...', async () => {
-                    await this.ensureActionManager(metaPath);
+                    await this.ensureActionManager(metaPath, defaultPolicy);
                     await this.runtime.loadEnvironment({
                         scenePath,
                         metaPath,
@@ -570,6 +650,35 @@ export default {
             console.log("start impulse");
             if (!this.commandManager) return;
             this.commandManager.triggerImpulse();
+        },
+        playTrajectory() {
+            if (!this.trajectoryManager) {
+                return;
+            }
+            this.trajectoryManager.play();
+            this.trajectoryPlaybackState = 'play';
+        },
+        stopTrajectory() {
+            if (!this.trajectoryManager) {
+                return;
+            }
+            this.trajectoryManager.stop();
+            this.trajectoryPlaybackState = 'stop';
+            this.runtime?.applyAction?.();
+        },
+        resetTrajectory() {
+            if (!this.trajectoryManager) {
+                return;
+            }
+            const wasPlaying = this.trajectoryManager.isPlaying;
+            this.trajectoryManager.reset();
+            this.trajectoryPlaybackState = wasPlaying ? 'play' : 'reset';
+        },
+        updateTrajectoryLoop(value) {
+            this.trajectoryLoop = value;
+            if (this.trajectoryManager) {
+                this.trajectoryManager.setLoop(value);
+            }
         },
         handleResize() {
             this.checkMobileDevice();
