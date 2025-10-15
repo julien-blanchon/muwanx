@@ -155,7 +155,7 @@
     <!-- Loading dialog -->
     <v-dialog :model-value="state === 0" persistent :max-width="isMobile ? '90vw' : '600px'"
         :fullscreen="isMobile && isSmallScreen" scrollable>
-        <v-card :title="!isMobile ? 'Loading Simulation Environment' : undefined">
+        <v-card class="status-dialog-card" :title="!isMobile ? 'Loading Simulation Environment' : undefined">
             <v-card-text class="dialog-content">
                 <div v-if="isMobile" class="mobile-dialog-title">Loading...</div>
                 <v-progress-linear indeterminate color="primary" class="mb-4"></v-progress-linear>
@@ -174,7 +174,7 @@
     <!-- Error dialog -->
     <v-dialog :model-value="state < 0" persistent :max-width="isMobile ? '90vw' : '600px'"
         :fullscreen="isMobile && isSmallScreen" scrollable>
-        <v-card :title="isMobile ? 'Error' : 'Simulation Environment Loading Error'">
+        <v-card class="status-dialog-card" :title="isMobile ? 'Error' : 'Simulation Environment Loading Error'">
             <v-card-text class="dialog-content">
                 <div class="error-text">
                     <span v-if="state == -1">
@@ -201,7 +201,7 @@
     </div>
 
     <!-- Help Button -->
-    <div class="help-button-container">
+    <div class="help-button-container" :class="helpButtonClasses">
         <v-btn 
             @click="showHelpDialog = true" 
             icon 
@@ -228,7 +228,7 @@
                 <div class="shortcut-section">
                     <div class="shortcut-item">
                         <div class="shortcut-key">
-                            <kbd @click="toggleUIVisibility" class="clickable-key">I</kbd>
+                            <kbd @click="toggleUIVisibility" class="clickable-key">i</kbd>
                         </div>
                         <div class="shortcut-description">
                             Toggle Interactive Mode (Hide/Show UI)
@@ -236,7 +236,7 @@
                     </div>
                     <div class="shortcut-item">
                         <div class="shortcut-key">
-                            <kbd @click="showHelpDialog = false" class="clickable-key">H</kbd>
+                            <kbd @click="showHelpDialog = false" class="clickable-key">h</kbd>
                         </div>
                         <div class="shortcut-description">
                             Toggle this help dialog
@@ -244,7 +244,7 @@
                     </div>
                     <div class="shortcut-item">
                         <div class="shortcut-key">
-                            <kbd @click="reset" class="clickable-key">Backspace</kbd>
+                            <kbd @click="reset" class="clickable-key">backspace</kbd>
                         </div>
                         <div class="shortcut-description">
                             Reset simulation
@@ -296,6 +296,18 @@ export default {
         // Help dialog
         showHelpDialog: false,
     }),
+    computed: {
+        helpButtonClasses() {
+            const classes = [];
+            if (this.isMobile) {
+                classes.push('help-button--mobile');
+            }
+            if (this.uiHidden) {
+                classes.push('help-button--interactive');
+            }
+            return classes;
+        },
+    },
     methods: {
         resolveDefaultPolicy(task) {
             if (!task) return null;
@@ -579,18 +591,24 @@ export default {
         this.checkMobileDevice();
         this.init();
 
-        // Add resize listener
         window.addEventListener('resize', this.handleResize);
+
+        const urlParams = new URLSearchParams(window.location.hash.split('?')[1]);
+        if (urlParams.get('hidectrl') === '1') {
+            this.uiHidden = true;
+            document.body.classList.add('interactive-mode');
+        } else if (urlParams.get('hidectrl') === '0') {
+            this.uiHidden = false;
+            document.body.classList.remove('interactive-mode');
+        }
 
         this.keydown_listener = (event) => {
             if (event.code === 'Backspace') {
                 this.reset();
             }
-            // Toggle interactive mode (hide/show UI) with 'I' key
             if (event.code === 'KeyI') {
                 this.toggleUIVisibility();
             }
-            // Toggle help dialog with 'H' key
             if (event.code === 'KeyH') {
                 this.showHelpDialog = !this.showHelpDialog;
             }
@@ -814,7 +832,7 @@ export default {
     }
     
     /* Center the card title on mobile */
-    .v-card-title {
+    .status-dialog-card .v-card-title {
         text-align: center !important;
         justify-content: center !important;
     }
@@ -888,6 +906,16 @@ export default {
     bottom: 20px;
     right: 20px;
     z-index: 1001;
+    transition: bottom 0.2s ease;
+}
+
+.help-button-container.help-button--mobile {
+    bottom: 90px;
+    right: 16px;
+}
+
+.help-button-container.help-button--interactive {
+    bottom: 20px !important;
 }
 
 .help-btn {
@@ -902,7 +930,6 @@ export default {
 
 @media (max-width: 768px) {
     .help-button-container {
-        bottom: 90px; /* Above mobile control panel */
         right: 16px;
     }
 }
