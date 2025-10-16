@@ -1,16 +1,68 @@
-import { VelocityCommand, ImpedanceCommand } from './commands.js';
-import { BaseAngVelMultistep, GravityMultistep, JointPosMultistep, JointVelMultistep, PrevActions } from './histories.js';
-import { HIMLocoObs } from './himLoco.js';
-import { DecapObs } from './decap.js';
+/**
+ * Observation components for MuJoCo runtime
+ * 
+ * ## Recommended Approach (Modular & Composable)
+ * Import atomic components for maximum flexibility:
+ * ```javascript
+ * import { BaseLinearVelocity, ProjectedGravity, JointPositions, ... } from './atomic.js';
+ * ```
+ * 
+ * These components support history_steps parameter:
+ * - history_steps = 1: single timestep (current state)
+ * - history_steps > 1: temporal history
+ * 
+ * ## Legacy Approach (Backwards Compatible)
+ * Monolithic observation classes are still available:
+ * ```javascript
+ * import { HIMLocoObs, G1VelocityObs, DecapObs, ... } from './legacy.js';
+ * ```
+ */
 
-export const Observations = {
+// Modern atomic components (recommended for new projects)
+import {
+    BaseLinearVelocity,
+    BaseAngularVelocity,
+    ProjectedGravity,
+    JointPositions,
+    JointVelocities,
+    PreviousActions,
+    SimpleVelocityCommand,
+} from './atomic.js';
+
+// Command components
+import {
     VelocityCommand,
+    VelocityCommandWithOscillators,
     ImpedanceCommand,
-    BaseAngVelMultistep,
-    GravityMultistep,
-    JointPosMultistep,
-    JointVelMultistep,
-    PrevActions,
-    HIMLocoObs,
-    DecapObs,
+    Oscillator,
+} from './commands.js';
+
+/**
+ * All available observation components
+ * 
+ * All policies now use modern atomic components!
+ * Legacy monolithic components (HIMLocoObs, DecapObs, G1VelocityObs) are kept
+ * only for reference and backwards compatibility if needed.
+ */
+export const Observations = {
+    // ===== ATOMIC COMPONENTS (Production) =====
+    // Base state observations
+    BaseLinearVelocity,
+    BaseAngularVelocity,
+    ProjectedGravity,
+    
+    // Joint observations
+    JointPositions,
+    JointVelocities,
+    PreviousActions,
+    
+    // Commands
+    SimpleVelocityCommand,
+    VelocityCommand,
+    VelocityCommandWithOscillators,
+    ImpedanceCommand,
+    Oscillator
 };
+
+// Default export for convenience
+export default Observations;

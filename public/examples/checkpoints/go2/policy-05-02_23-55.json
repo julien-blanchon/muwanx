@@ -1,86 +1,49 @@
 {
+    "_comment": "Go2 policy variant using modern atomic components (117 dims policy + 27 dims command)",
     "onnx": {
         "meta": {
-            "in_keys": [
-                "command",
-                "policy",
-                "is_init",
-                "adapt_hx"
-            ],
+            "in_keys": ["command", "policy", "is_init", "adapt_hx"],
             "out_keys": [
-                "command",
-                "policy",
-                "priv_pred",
-                "ext_pred",
-                [
-                    "info",
-                    "ext_rec"
-                ],
-                [
-                    "next",
-                    "adapt_hx"
-                ],
-                "_actor_inp",
-                "_actor_feature",
-                "loc",
-                "scale",
-                "flag",
-                "action",
-                "sample_log_prob",
-                "retro_inp",
-                "retro_feat",
-                [
-                    "info",
-                    "retro_pred"
-                ]
+                "command", "policy", "priv_pred", "ext_pred",
+                ["info", "ext_rec"], ["next", "adapt_hx"],
+                "_actor_inp", "_actor_feature", "loc", "scale", "flag", "action",
+                "sample_log_prob", "retro_inp", "retro_feat", ["info", "retro_pred"]
             ],
-            "in_shapes": [
-                [
-                    [
-                        1,
-                        27
-                    ],
-                    [
-                        1,
-                        117
-                    ],
-                    [
-                        1
-                    ],
-                    [
-                        1,
-                        128
-                    ]
-                ]
-            ]
+            "in_shapes": [[[1, 27], [1, 117], [1], [1, 128]]]
         },
         "path": "./examples/checkpoints/go2/policy-05-02_23-55.onnx"
     },
     "obs_config": {
         "policy": [
             {
-                "name": "GravityMultistep",
+                "name": "ProjectedGravity",
                 "joint_name": "floating_base_joint",
-                "history_steps": 3
+                "history_steps": 3,
+                "_comment": "9 dims (3×3): gravity in base frame with 3-step history"
             },
             {
-                "name": "JointPosMultistep",
+                "name": "JointPositions",
                 "joint_names": "isaac",
-                "history_steps": 3
+                "history_steps": 3,
+                "_comment": "36 dims (12×3): joint positions with 3-step history"
             },
             {
-                "name": "JointVelMultistep",
+                "name": "JointVelocities",
                 "joint_names": "isaac",
-                "history_steps": 3
+                "history_steps": 3,
+                "_comment": "36 dims (12×3): joint velocities with 3-step history"
             },
             {
-                "name": "PrevActions",
-                "history_steps": 3
+                "name": "PreviousActions",
+                "history_steps": 3,
+                "transpose": true,
+                "_comment": "36 dims (12×3): previous actions with 3-step history (transposed for Go2 compatibility)"
             }
         ],
         "command": [
             {
-                "name": "ImpedanceCommand"
+                "name": "ImpedanceCommand",
+                "_comment": "27 dims: impedance control parameters + oscillators"
             }
         ]
     },

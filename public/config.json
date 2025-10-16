@@ -27,9 +27,11 @@
       "id": "3",
       "name": "G1",
       "model_xml": "unitree_g1/scene.xml",
-      "asset_meta": null,
-      "default_policy": null,
-      "policies": []
+      "asset_meta": "./examples/checkpoints/unitree_g1/asset_meta.json",
+      "default_policy": "basic",
+      "policies": [
+        { "id": "basic", "name": "Basic Locomotion", "path": "./examples/checkpoints/unitree_g1/g1_velocity.json", "ui_controls": [] }
+      ]
     },
     {
       "id": "4",
