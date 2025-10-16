@@ -17,7 +17,7 @@
                 ]
             ]
         },
-        "path": "./examples/checkpoints/unitree_g1/model_29999.onnx"
+        "path": "./examples/checkpoints/unitree_g1/g1_velocity.onnx"
     },
     "obs_config": {
         "observation": [
