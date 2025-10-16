@@ -24,7 +24,8 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        submodules: recursive
+        # For now disable submodules (it's taking almost 2min to download + upload)
+        submodules: false
       
     - name: Setup Bun
       uses: oven-sh/setup-bun@v2
