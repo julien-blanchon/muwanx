@@ -30,7 +30,8 @@
       "asset_meta": "./examples/checkpoints/unitree_g1/asset_meta.json",
       "default_policy": "basic",
       "policies": [
-        { "id": "basic", "name": "Basic Locomotion", "path": "./examples/checkpoints/unitree_g1/g1_velocity.json", "ui_controls": [] }
+        { "id": "basic", "name": "Basic Locomotion", "path": "./examples/checkpoints/unitree_g1/g1_velocity.json", "ui_controls": [] },
+        { "id": "balance", "name": "Single Foot Balance", "path": "./examples/checkpoints/unitree_g1/single_foot_balance.json", "ui_controls": [] }
       ]
     },
     {
@@ -44,7 +45,8 @@
           "id": "spinkick_trajectory",
           "name": "Spin Kick (Trajectory)",
           "type": "trajectory",
-          "trajectory_path": "./examples/trajectories/g1_spinkick.json",
+
+          "trajectory_path": "./examples/trajectories/unitree_g1/g1_spinkick.json",
           "ui_controls": ["trajectory_playback"]
         }
       ]
